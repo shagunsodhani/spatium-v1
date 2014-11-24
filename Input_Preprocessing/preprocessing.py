@@ -30,3 +30,40 @@ json.dump(d_preprocessed,f_output2)
 f_output2.close()
 
 print "Total distinct features "+str(count)+'\n'
+
+'''
+Internal representation of dictionary and list structure
+>>> for x in d["data"][0]:
+...     print x
+... 
+6029125
+E203856B-FECC-42C9-A802-660A3333911B
+6029125
+1399100557
+878752
+1399100557
+878752
+None
+9566267
+HX217110
+2013-12-31T23:59:00
+029XX N MILWAUKEE AVE
+1153
+DECEPTIVE PRACTICE
+FINANCIAL IDENTITY THEFT OVER $ 300
+FACTORY/MANUFACTURING BUILDING
+False
+False
+1412
+None
+35
+21
+11
+None
+None
+2013
+2014-04-09T17:12:53
+None
+None
+[None, None, None, None, None]
+'''
