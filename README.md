@@ -1,7 +1,8 @@
 spatium
 =======
 
-Spatial Co-location Rule Mining
+Spatial Co-location Rule 
+
 Co-location Miner Algorithm Implementation proposed by [1]
 
 
