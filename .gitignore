@@ -45,6 +45,8 @@ coverage.xml
 # Translations
 *.mo
 *.pot
+*.csv
+*.json
 
 # Django stuff:
 *.log
@@ -55,5 +57,3 @@ docs/_build/
 # PyBuilder
 target/
 data/
-*.json
-*.csv
