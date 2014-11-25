@@ -23,40 +23,50 @@ class Miner(object):
 
 	def initialise(self):
 		"""To initialise the class variables"""
-		f_mapping = open(self.mappingFile, 'r')
-		self.mapping = json.load(f_mapping)
+		self.initialise_location()
+		self.initialise_candidate()
+	
+	def initialise_location(self):
 		f_infile = open(self.inFile, 'r')
 		self.instance_superset = json.load(f_infile)
-		sql_candidate = "INSERT INTO candidate (colocation, pi) values "
-		sql_location = "INSERT INTO location (instanceid, x, y) values "
+		f_mapping = open(self.mappingFile, 'r')
+		self.mapping = json.load(f_mapping)
+		sql_location = "INSERT INTO location (instanceid, x, y, type) values "
 		count = 1
 		for i in self.instance_superset:
-			sql_location +="("+str(i)+","+str(self.instance_superset[i['x_location']])+","+str(self.instance_superset[i['y_location']])+"),"
+			sql_location +="("+str(i)+","+str(self.instance_superset[i]['x_coordinate'])+","+str(self.instance_superset[i]['y_coordinate'])+str(self.mapping[self.instance_superset[i]['type']])+"),"
 			count = (count+1)
 			if(count%5000 == 0):
 				if(sql_location[-1]==','):
 					sql_location=sql_location[:-1]
 				db.write(sql_location, self.cursor, self.conn)
-				sql_location = "INSERT INTO location (instanceid, x, y) values "
+				sql_location = "INSERT INTO location (instanceid, x, y, type) values "
 				print count, "Items inserted into location table"
 		if(sql_location[-1]==','):
 			sql_location=sql_location[:-1]
-		db.write(sql_location, self.cursor, self.conn)		
+		if(sql_location[-1] == ')'):
+			db.write(sql_location, self.cursor, self.conn)
 
+	def initialise_candidate(self):
+		f_mapping = open(self.mappingFile, 'r')
+		self.mapping = json.load(f_mapping)
+		sql_candidate = "INSERT INTO candidate (colocation, pi) values "
 		count = 1
 		for i in self.mapping :
-			sql_candidate = "("+str(self.mapping[i])+",1),"
+			sql_candidate += "("+str(self.mapping[i])+",1),"
 			count = (count+1)
 			if(count%5000 == 0):
 				if(sql_candidate[-1]==','):
 					sql_candidate=sql_candidate[:-1]
+				print sql_candidate
 				db.write(sql_candidate, self.cursor, self.conn)
 				sql_candidate = "INSERT INTO candidate (colocation, pi) values "
 				print count, "Items inserted into candidate table"		
 		if(sql_candidate[-1]==','):
 			sql_candidate=sql_candidate[:-1]
-		db.write(sql_candidate, self.cursor, self.conn)		
-
+		if(sql_candidate[-1]==')'):
+			print sql_candidate
+			db.write(sql_candidate, self.cursor, self.conn)		
 
 
 a = Miner()
