@@ -10,7 +10,7 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000):
+	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 06):
 		
 		self.inFile = inFile
 		self.mappingFile = mappingFile
@@ -19,9 +19,10 @@ class Miner(object):
 		self.candidate_sizeone = {}
 		self.conn = db.connect(app_name)
 		self.cursor = self.conn.cursor()
-		self.initialise()
-		self.colocation_2()
 		self.threshold_distance = threshold_distance
+		self.minPrevalance = minPrevalance
+		# self.initialise()
+		self.colocation_2()
 
 	def initialise(self):
 		"""To initialise the class variables"""
@@ -97,7 +98,7 @@ class Miner(object):
 	
 	def colocation_2(self):
 		"""to generate colocations of size 2"""
-		sql = "select type, count(*) from location"
+		sql = "select type, count(*) from location group by type"
 		result = db.read(sql, self.cursor)
 		type_count = {}
 		candidate_list = []
@@ -105,22 +106,43 @@ class Miner(object):
 			candidate_list.append(int(i[0]))
 			type_count[int(i[0])] = int(i[1])
 
-		sql = "select candidate, label from candidate where size = 1"
+		sql = "select colocation, label from candidate where size = 1"
 		result = db.read(sql, self.cursor)
-		candidate_label = {}
+		colocation_label = {}
 		for i in result:
-			candidate_label[int(i[0])] = int(i[1])
+			colocation_label[int(i[0])] = int(i[1])
 
 		candidate_list.sort()
 
 		length = len(candidate_list)
-
 		R = self.threshold_distance
-		for i in range(0:length-1):
-			for j in range(i+1:length):
-			sql = "select * from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
-				   + "and pow(i.x-j.x, 2) + pow(i.y-j.y, 2) <= "+str(R*R)
-			result = db.read(sql, self.cursor)	
-			for i in result:
-				print i
+		A_temp = {}
+		B_temp = {}
+		count_a = 0
+		count_b = 0  
+		for i in range(0, length-1):
+			for j in range(i+1, length):
+				sql = "select * from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
+				   + " and pow(i.x-j.x, 2) + pow(i.y-j.y, 2) <= "+str(R*R)
+				result = db.read(sql, self.cursor)	
+				A_temp = {}
+				B_temp = {}
+				count_a = 0
+				count_b = 0
+				for i in result:
+					a = str(i[0])
+					b = str(i[1])
+					if a not in A_temp:
+						count_a+=1
+						A_temp[a] = 0
+					if b not in B_temp:
+						count_b+=1
+
+				participationIndex = 1.0*(count_a * count_b)
+				participationIndex = participationIndex / (type_count[candidate_list[i]] * type_count[candidate_list[j]])		
+				if( participationIndex >= self.minPrevalance):
+					print candidate_list[i], " ", candidate_list[j]
+
+
+
 a = Miner()
