@@ -22,8 +22,6 @@ class Miner(object):
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
 		self.create = create_table
-		# self.initialise()
-		self.colocation_2()
 
 	def initialise(self):
 		"""To initialise the class variables"""
@@ -156,7 +154,8 @@ class Miner(object):
 				if( participationIndex >= self.minPrevalance):
 					colocation_temp = str(candidate_list[i])+"|"+str(candidate_list[j])
 					# print colocation_temp
-					sql_candidate = "INSERT INTO candidate (colocation, pi, size) VALUES ("+colocation_temp+","+str(participationIndex)+", 2)"
+					participationIndex = round(participationIndex,7)
+					sql_candidate = "INSERT INTO candidate (colocation, pi, size) VALUES (\'"+colocation_temp+"\',"+str(participationIndex)+", 2)"
 					# print sql_candidate
 					db.write(sql_candidate, self.cursor, self.conn)
 					sql_label = "SELECT max(label) FROM candidate"
@@ -183,4 +182,3 @@ class Miner(object):
 					if(sql_instance[-1] == ')'):
 						db.write(sql_instance, self.cursor, self.conn)
 
-a = Miner()
