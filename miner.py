@@ -17,6 +17,7 @@ class Miner(object):
 		self.mappingFile = mappingFile
 		self.mapping = {}
 		self.instance_superset = {}
+		self.candidate_sizeone = {}
 		self.conn = db.connect(app_name)
 		self.cursor = conn.cursor()
 		initialise()
@@ -25,11 +26,36 @@ class Miner(object):
     	"""To initialise the class variables"""
     	self.mapping = json.load(self.mappingFile)
     	self.instance_superset = json.load(self.inFile)
+    	sql_candidate = "INSERT INTO candidate (colocation, pi) values "
+    	sql_location = "INSERT INTO location (instanceid, x, y) values "
+    	count = 1
     	for i in self.instance_superset:
-    		print i
+    		sql_location +="("+str(i)+","+str(self.instance_superset[i['x_location']])+","+str(self.instance_superset[i['y_location']])+"),"
+    		count = (count+1)
+    		if(count%5000 == 0):
+    			if(sql_location[-1]==','):
+    				sql_location=sql_location[:-1]
+    			db.write(sql_location, self.cursor, self.conn)
+    			sql_location = "INSERT INTO location (instanceid, x, y) values "
+    			print count, "Items inserted into location table"
+	    if(sql_location[-1]==','):
+			sql_location=sql_location[:-1]
+		db.write(sql_location, self.cursor, self.conn)		
+	    
+	    count = 1
+	    for i in self.mapping :
+	    	sql_candidate = "("+str(self.mapping[i])+",1),"
+	    	count = (count+1)
+    		if(count%5000 == 0):
+    			if(sql_candidate[-1]==','):
+    				sql_candidate=sql_candidate[:-1]
+    			db.write(sql_candidate, self.cursor, self.conn)
+    			sql_candidate = "INSERT INTO candidate (colocation, pi) values "
+    			print count, "Items inserted into candidate table"		
+    	if(sql_candidate[-1]==','):
+			sql_candidate=sql_candidate[:-1]
+		db.write(sql_candidate, self.cursor, self.conn)		
 
-filename = "INTEGRATED-DATASET.csv"
-inFile = helper.dataFromFile(filename)
-a = Apriori(inFile)
-a.runApriori()
-a.printResults()
+
+
+a = Miner(inFile)
