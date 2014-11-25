@@ -97,7 +97,15 @@ class Miner(object):
 			db.write(sql_instance, self.cursor, self.conn)
 	
 	def colocation_2(self):
+
 		"""to generate colocations of size 2"""
+		k=2
+		table_sql = "CREATE TABLE IF NOT EXISTS "
+		table_sql+="`instance"+str(k)+"` (`label` int(11) NOT NULL,"
+		for i in range (0,k):
+			table_sql+="`instanceid"+str(i+1)+"` int(11) NOT NULL,"
+		table_sql += "KEY `label` (`label`) ) "
+		db.add_table(table_sql, self.cursor)
 		sql = "select type, count(*) from location group by type"
 		result = db.read(sql, self.cursor)
 		type_count = {}
