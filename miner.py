@@ -10,7 +10,7 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", minSupport = 0.15 , minConfidence = 0.6):
+	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000):
 		
 		self.inFile = inFile
 		self.mappingFile = mappingFile
@@ -20,6 +20,8 @@ class Miner(object):
 		self.conn = db.connect(app_name)
 		self.cursor = self.conn.cursor()
 		self.initialise()
+		self.colocation_2()
+		self.threshold_distance = threshold_distance
 
 	def initialise(self):
 		"""To initialise the class variables"""
@@ -92,6 +94,33 @@ class Miner(object):
 			sql_instance=sql_instance[:-1]
 		if(sql_instance[-1] == ')'):
 			db.write(sql_instance, self.cursor, self.conn)
-				
+	
+	def colocation_2(self):
+		"""to generate colocations of size 2"""
+		sql = "select type, count(*) from location"
+		result = db.read(sql, self.cursor)
+		type_count = {}
+		candidate_list = []
+		for i in result:
+			candidate_list.append(int(i[0]))
+			type_count[int(i[0])] = int(i[1])
 
+		sql = "select candidate, label from candidate where size = 1"
+		result = db.read(sql, self.cursor)
+		candidate_label = {}
+		for i in result:
+			candidate_label[int(i[0])] = int(i[1])
+
+		candidate_list.sort()
+
+		length = len(candidate_list)
+
+		R = self.threshold_distance
+		for i in range(0:length-1):
+			for j in range(i+1:length):
+			sql = "select * from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
+				   + "and pow(i.x-j.x, 2) + pow(i.y-j.y, 2) <= "+str(R*R)
+			result = db.read(sql, self.cursor)	
+			for i in result:
+				print i
 a = Miner()
