@@ -129,9 +129,9 @@ class Miner(object):
 				B_temp = {}
 				count_a = 0
 				count_b = 0
-				for i in result:
-					a = str(i[0])
-					b = str(i[1])
+				for k in result:
+					a = str(k[0])
+					b = str(k[1])
 					if a not in A_temp:
 						count_a+=1
 						A_temp[a] = 0
