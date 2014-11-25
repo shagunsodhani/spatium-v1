@@ -34,7 +34,7 @@ class Miner(object):
 		sql_location = "INSERT INTO location (instanceid, x, y, type) values "
 		count = 1
 		for i in self.instance_superset:
-			sql_location +="("+str(i)+","+str(self.instance_superset[i]['x_coordinate'])+","+str(self.instance_superset[i]['y_coordinate'])+str(self.mapping[self.instance_superset[i]['type']])+"),"
+			sql_location +="("+str(i)+","+str(self.instance_superset[i]['x_coordinate'])+","+str(self.instance_superset[i]['y_coordinate'])+","+str(self.mapping[self.instance_superset[i]['type']])+"),"
 			count = (count+1)
 			if(count%5000 == 0):
 				if(sql_location[-1]==','):
