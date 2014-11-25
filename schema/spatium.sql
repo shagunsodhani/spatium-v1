@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Nov 25, 2014 at 09:02 PM
+-- Generation Time: Nov 25, 2014 at 09:42 PM
 -- Server version: 5.5.40-0ubuntu0.14.04.1
 -- PHP Version: 5.5.9-1ubuntu4.5
 
@@ -29,12 +29,12 @@ SET time_zone = "+00:00";
 CREATE TABLE IF NOT EXISTS `candidate` (
   `colocation` varchar(65500) NOT NULL,
   `label` int(11) NOT NULL AUTO_INCREMENT,
-  `pi` decimal(10,0) NOT NULL,
+  `pi` double NOT NULL,
   `size` int(11) NOT NULL DEFAULT '1',
   PRIMARY KEY (`label`),
   UNIQUE KEY `label` (`label`),
   KEY `label_2` (`label`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=24 ;
 
 -- --------------------------------------------------------
 

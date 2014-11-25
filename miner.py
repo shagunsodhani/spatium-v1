@@ -4,6 +4,8 @@ import json
 from itertools import chain, combinations
 from collections import defaultdict
 from optparse import OptionParser
+# from apriori import Apriori
+from helper import create_table
 
 
 class Miner(object):
@@ -100,15 +102,12 @@ class Miner(object):
 		"""to generate colocations of size 2"""
 
 		k=2
-		table_name = "instance"+str(k)
-		if self.create == 1: 
-			table_sql = "CREATE TABLE IF NOT EXISTS "
-			table_sql+="`"+table_name+"` (`label` int(11) NOT NULL,"
-			for i in range (0,k):
-				table_sql+="`instanceid"+str(i+1)+"` int(11) NOT NULL,"
-			
-			table_sql += "KEY `label` (`label`) ) "
-			db.add_table(table_sql, self.cursor)
+		table_candidate_name = "candidate"+str(k)
+		table_instance_name = "instance"+str(k)
+
+		if self.create == 1:
+			create_table(k, self.cursor)
+
 		sql = "select type, count(*) from location group by type"
 		result = db.read(sql, self.cursor)
 		type_count = {}
@@ -152,19 +151,21 @@ class Miner(object):
 				participationIndex = 1.0*(count_a * count_b)
 				participationIndex = participationIndex / (type_count[candidate_list[i]] * type_count[candidate_list[j]])		
 				if( participationIndex >= self.minPrevalance):
+					
 					colocation_temp = str(candidate_list[i])+"|"+str(candidate_list[j])
 					# print colocation_temp
 					participationIndex = round(participationIndex,7)
-					sql_candidate = "INSERT INTO candidate (colocation, pi, size) VALUES (\'"+colocation_temp+"\',"+str(participationIndex)+", 2)"
-					# print sql_candidate
+					sql_candidate = "INSERT INTO "+table_candidate_name+" (typeid1, typeid2, pi, labelprev1, labelprev2) \
+									VALUES ("+str(candidate_list[i])+","+str(candidate_list[j])+","+str(participationIndex)+","+str(i)+","+str(j)+")"
 					db.write(sql_candidate, self.cursor, self.conn)
-					sql_label = "SELECT max(label) FROM candidate"
-					# print sql_label
+
+					sql_label = "SELECT max(label) FROM "+str(table_candidate_name)
+					
 					label_result = db.read(sql_label, self.cursor)
 					# print label_result
 					label = str(label_result[0][0])
-					# print label, "label"
-					sql_instance = "INSERT INTO "+table_name+" VALUES "
+
+					sql_instance = "INSERT INTO "+table_instance_name+" VALUES "
 					count = 1
 					for l in result:
 						a = str(l[0])
@@ -177,11 +178,35 @@ class Miner(object):
 							# print sql_instance
 							# print "precise"
 							db.write(sql_instance, self.cursor, self.conn)
-							sql_instance = "INSERT INTO "+table_name+" VALUES "
-							print count, "Items inserted into "+table_name+" table"
+							sql_instance = "INSERT INTO "+table_instance_name+" VALUES "
+							print count, "Items inserted into "+table_instance_name+" table"
 					if(sql_instance[-1]==','):
 						sql_instance=sql_instance[:-1]
 					if(sql_instance[-1] == ')'):
 						# print sql_instance
 						db.write(sql_instance, self.cursor, self.conn)
+					
+	def colocation_k(self, k):
+		"""colocation for size k using colocation for size k-1"""
+		table_old_name = "instance"+str(k-1)
+		table_name = "instance"+str(k)
+		if self.create == 1: 
+			table_sql = "CREATE TABLE IF NOT EXISTS "
+			table_sql+="`"+table_name+"` (`label` int(11) NOT NULL,"
+			for i in range (0,k):
+				table_sql+="`instanceid"+str(i+1)+"` int(11) NOT NULL,"
+			
+			table_sql += "KEY `label` (`label`) ) "
+			db.add_table(table_sql, self.cursor)
 
+		sql = "SELECT colocation, label FROM candidate WHERE size = " + str(k-1)
+		result = db.read(sql,self.cursor)
+		C_k_1 = {}
+		for i in result:
+			a = i[0]
+			b = a.split('|')
+			C_k_1[a] = []
+			for j in b:
+				C_k_1[a].append(j)
+
+		c_apriori = Apriori()
