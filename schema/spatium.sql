@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Nov 25, 2014 at 02:20 AM
+-- Generation Time: Nov 25, 2014 at 10:50 AM
 -- Server version: 5.5.40-0ubuntu0.14.04.1
 -- PHP Version: 5.5.9-1ubuntu4.5
 
@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `location` (
   `instanceid` int(11) NOT NULL,
   `x` int(11) NOT NULL,
   `y` int(11) NOT NULL,
+  `type` int(11) NOT NULL,
   PRIMARY KEY (`instanceid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
