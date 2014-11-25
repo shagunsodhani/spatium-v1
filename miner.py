@@ -6,6 +6,7 @@ from collections import defaultdict
 from optparse import OptionParser
 # from apriori import Apriori
 from helper import create_table
+from helper import subset
 
 
 class Miner(object):
@@ -187,26 +188,77 @@ class Miner(object):
 						db.write(sql_instance, self.cursor, self.conn)
 					
 	def colocation_k(self, k):
+
 		"""colocation for size k using colocation for size k-1"""
-		table_old_name = "instance"+str(k-1)
-		table_name = "instance"+str(k)
-		if self.create == 1: 
-			table_sql = "CREATE TABLE IF NOT EXISTS "
-			table_sql+="`"+table_name+"` (`label` int(11) NOT NULL,"
-			for i in range (0,k):
-				table_sql+="`instanceid"+str(i+1)+"` int(11) NOT NULL,"
-			
-			table_sql += "KEY `label` (`label`) ) "
-			db.add_table(table_sql, self.cursor)
+		table_candidate_name_old = "candidate"+str(k-1)
+		table_instance_name_old = "instance"+str(k-1)
 
-		sql = "SELECT colocation, label FROM candidate WHERE size = " + str(k-1)
-		result = db.read(sql,self.cursor)
+		table_candidate_name = "candidate"+str(k)
+		table_instance_name = "instance"+str(k)
+
 		C_k_1 = {}
-		for i in result:
-			a = i[0]
-			b = a.split('|')
-			C_k_1[a] = []
-			for j in b:
-				C_k_1[a].append(j)
+		accept = [] 
+		#contains all candidate co-locations for table instance computation
 
-		c_apriori = Apriori()
+		if self.create == 1:
+			create_table(k, self.cursor)
+		
+		sql = "SELECT "
+		for i in range(1, k):
+			a = "typeid"+str(i)
+			sql+=a+","
+		sql=sql[:-1]
+		sql+=" FROM "+table_candidate_name_old			
+		# print sql
+		result = db.read(sql,self.cursor)
+		for i in result:
+			a = ""
+			for j in i:
+				a+=str(j)+"|" 
+			a=a[:-1]
+			C_k_1[a] = 0
+
+		# print C_k_1
+
+		sql = "SELECT "
+		for i in range(1, k):
+			a = "typeid"+str(i)
+			sql+="C1."+a+","
+		sql+="C2.typeid"+str(k-1)+",C1.label, C2.label"
+		sql+=" FROM "+str(table_candidate_name_old)+" C1, "+str(table_candidate_name_old)+" C2 WHERE "
+		for i in range(1,k-1):
+			a = "typeid"+str(i)
+			sql+="C1."+a+" = C2."+a+" AND "
+		sql+="C1.typeid"+str(k-1)+" < C2.typeid"+str(k-1)
+		# print sql
+
+		result = db.read(sql,self.cursor)
+		for i in result:
+			a = []
+			for j in range(0,k):
+				a.append(str(i[j]))
+			b = subset(a)
+			flag = 1
+			for j in b:
+				if(j not in C_k_1):
+					flag = 0
+					break
+			if flag == 1:
+				accept.append(i)
+
+		R = self.threshold_distance		
+		for i in accept:
+			labelprev1 = str(i[k])
+			labelprev2 = str(i[k+1])
+			sql = "SELECT "
+			for l in range(1, k):
+				a = "T1.instanceid"+str(l)
+				sql+=a+","
+			sql+="T2.instanceid"+str(k-1)	
+			sql+=" FROM "+table_instance_name_old+" T1, "+table_instance_name_old + " T2, location L1, location L2 WHERE T1.label = "\
+				+labelprev1 + " AND T2.label = "+labelprev2 + " AND "
+			for j in range(1,k-1):	
+				sql+= "T1.instanceid"+str(j) + " = T2.instanceid"+str(j)+" AND "
+			sql+= " L1.instanceid = T1.instanceid"+str(k-1)+" AND L2.instanceid = T2.instanceid"+str(k-1)+" AND pow(L1.x-L2.x, 2) + pow(L1.y-L2.y, 2) <= "+str(R*R)
+			print sql
+			instance_result = db.read(sql, self.cursor)

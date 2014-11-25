@@ -23,3 +23,16 @@ def create_table(k, cursor):
     table_candidate_sql += "`pi` double NOT NULL, `labelprev1` int(11) NOT NULL, `labelprev2` int(11) NOT NULL, KEY `label` (`label`) ) "
     print table_candidate_sql
     db.add_table(table_candidate_sql, cursor)
+
+def subset(a):
+    result = []
+    length = len(a)
+    for i in range(0,length):
+        temp = ""
+        for j in a[:i]:
+            temp+=str(j)+"|"
+        for j in a[i+1:]:
+            temp+=str(j)+"|"
+        temp=temp[:-1]            
+        result.append(temp)
+    return result
