@@ -1,5 +1,4 @@
 import sys
-import helper
 import db
 import json
 from itertools import chain, combinations
@@ -24,8 +23,10 @@ class Miner(object):
 
 	def initialise(self):
 		"""To initialise the class variables"""
-		self.mapping = json.load(self.mappingFile)
-		self.instance_superset = json.load(self.inFile)
+		f_mapping = open(self.mappingFile, 'r')
+		self.mapping = json.load(f_mapping)
+		f_infile = open(self.inFile, 'r')
+		self.instance_superset = json.load(f_infile)
 		sql_candidate = "INSERT INTO candidate (colocation, pi) values "
 		sql_location = "INSERT INTO location (instanceid, x, y) values "
 		count = 1
