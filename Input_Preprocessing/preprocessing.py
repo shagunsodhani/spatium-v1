@@ -27,6 +27,8 @@ for x in d_preprocessed:
 	temp = d_preprocessed[x]["type"]
 	d_preprocessed[x]["type"] = str(d_mapping[temp])
 
+'''
+Without Sampling
 json.dump(d_mapping,f_output1)
 f_output1.close()
 
@@ -34,6 +36,51 @@ json.dump(d_preprocessed,f_output2)
 f_output2.close()
 
 print "Total distinct features "+str(count)+'\n'
+'''
+
+'''
+Sampling Code
+'''
+
+d_final = {}
+d_mapping_final = {}
+
+for x in d_preprocessed:
+	temp = int(d_preprocessed[x]['type'])
+	if temp not in d_final:
+		print temp
+		d_final[temp] = []
+		d_final[temp].append(x)
+	else:
+		d_final[temp].append(x)
+
+max_len = 600
+counter = 0
+d_temp_mapping = {}
+d_temp_processed = {}
+
+for x in d_mapping:
+	print x
+	if len(d_final[int(d_mapping[x])]) < max_len:
+		
+		d_mapping_final[x] = d_mapping[x]
+		d_temp_mapping[int(d_mapping[x])] = {}
+		counter += 1
+
+for x in d_preprocessed:
+	if int(d_preprocessed[x]['type']) in d_temp_mapping:
+		
+		d_temp_processed[x] = {}
+		d_temp_processed[x] = d_preprocessed[x]
+
+json.dump(d_mapping_final,f_output1)
+f_output1.close()
+
+json.dump(d_temp_processed,f_output2)
+f_output2.close()
+
+print "Counter = "+str(counter)
+
 
 '''
 Internal representation of dictionary and list structure
