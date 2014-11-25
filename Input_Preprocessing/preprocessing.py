@@ -23,6 +23,10 @@ for x in d["data"]:
 			d_mapping[x[13]] = count
 			count += 1
 
+for x in d_preprocessed:
+	temp = d_preprocessed[x]["type"]
+	d_preprocessed[x]["type"] = str(d_mapping[temp])
+
 json.dump(d_mapping,f_output1)
 f_output1.close()
 
