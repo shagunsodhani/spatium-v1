@@ -50,19 +50,6 @@ CREATE TABLE IF NOT EXISTS `instance` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `instance2`
---
-
-CREATE TABLE IF NOT EXISTS `instance2` (
-  `label` int(11) NOT NULL,
-  `instanceid1` int(11) NOT NULL,
-  `instanceid2` int(11) NOT NULL,
-  KEY `label` (`label`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `location`
 --
 

@@ -13,7 +13,7 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.001, create_table=0):
+	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.001, create_table=0, kmax = 4):
 		
 		self.inFile = inFile
 		self.mappingFile = mappingFile
@@ -25,6 +25,16 @@ class Miner(object):
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
 		self.create = create_table
+
+	def __del__(self):
+
+		truncate('location', self.cursor)
+		truncate('instance', self.cursor)
+		truncate('candidate', self.cursor)
+		k=self.kmax
+		for i in range(1,k+1):
+			table_name = "instance"+str(i)
+			drop(table_name, self.cursor)
 
 	def initialise(self):
 		"""To initialise the class variables"""
