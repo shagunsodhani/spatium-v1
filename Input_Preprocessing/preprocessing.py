@@ -10,7 +10,7 @@ d = json.load(f_input)
 d_mapping = {}
 d_preprocessed = {}
 
-count = 0
+count = 1
 for x in d["data"]:
 
 	if (x[23] != None and x[24] != None):
