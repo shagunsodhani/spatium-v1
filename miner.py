@@ -162,23 +162,26 @@ class Miner(object):
 					# print sql_label
 					label_result = db.read(sql_label, self.cursor)
 					# print label_result
-					label = label_result[0][0]
+					label = str(label_result[0][0])
 					# print label, "label"
 					sql_instance = "INSERT INTO "+table_name+" VALUES "
 					count = 1
 					for l in result:
 						a = str(l[0])
 						b = str(l[1])
-						sql_instance+="("+a+","+b+"),"
+						sql_instance+="("+label+","+a+","+b+"),"
 						count+=1
 						if(count%5000 == 0):
 							if(sql_instance[-1]==','):
 								sql_instance = sql_instance[:-1]
+							# print sql_instance
+							# print "precise"
 							db.write(sql_instance, self.cursor, self.conn)
 							sql_instance = "INSERT INTO "+table_name+" VALUES "
 							print count, "Items inserted into "+table_name+" table"
 					if(sql_instance[-1]==','):
 						sql_instance=sql_instance[:-1]
 					if(sql_instance[-1] == ')'):
+						# print sql_instance
 						db.write(sql_instance, self.cursor, self.conn)
 
