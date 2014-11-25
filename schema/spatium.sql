@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Nov 25, 2014 at 11:38 AM
+-- Generation Time: Nov 25, 2014 at 09:02 PM
 -- Server version: 5.5.40-0ubuntu0.14.04.1
 -- PHP Version: 5.5.9-1ubuntu4.5
 
@@ -29,7 +29,7 @@ SET time_zone = "+00:00";
 CREATE TABLE IF NOT EXISTS `candidate` (
   `colocation` varchar(65500) NOT NULL,
   `label` int(11) NOT NULL AUTO_INCREMENT,
-  `pi` int(11) NOT NULL,
+  `pi` decimal(10,0) NOT NULL,
   `size` int(11) NOT NULL DEFAULT '1',
   PRIMARY KEY (`label`),
   UNIQUE KEY `label` (`label`),
@@ -50,6 +50,19 @@ CREATE TABLE IF NOT EXISTS `instance` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `instance2`
+--
+
+CREATE TABLE IF NOT EXISTS `instance2` (
+  `label` int(11) NOT NULL,
+  `instanceid1` int(11) NOT NULL,
+  `instanceid2` int(11) NOT NULL,
+  KEY `label` (`label`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `location`
 --
 
@@ -58,7 +71,11 @@ CREATE TABLE IF NOT EXISTS `location` (
   `x` int(11) NOT NULL,
   `y` int(11) NOT NULL,
   `type` int(11) NOT NULL,
-  PRIMARY KEY (`instanceid`)
+  PRIMARY KEY (`instanceid`),
+  UNIQUE KEY `instanceid` (`instanceid`),
+  KEY `instanceid_2` (`instanceid`),
+  KEY `instanceid_3` (`instanceid`),
+  KEY `type` (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

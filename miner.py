@@ -10,7 +10,7 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 06):
+	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.1, create_table=0):
 		
 		self.inFile = inFile
 		self.mappingFile = mappingFile
@@ -21,6 +21,7 @@ class Miner(object):
 		self.cursor = self.conn.cursor()
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
+		self.create = create_table
 		# self.initialise()
 		self.colocation_2()
 
@@ -99,13 +100,17 @@ class Miner(object):
 	def colocation_2(self):
 
 		"""to generate colocations of size 2"""
+
 		k=2
-		table_sql = "CREATE TABLE IF NOT EXISTS "
-		table_sql+="`instance"+str(k)+"` (`label` int(11) NOT NULL,"
-		for i in range (0,k):
-			table_sql+="`instanceid"+str(i+1)+"` int(11) NOT NULL,"
-		table_sql += "KEY `label` (`label`) ) "
-		db.add_table(table_sql, self.cursor)
+		table_name = "instance"+str(k)
+		if self.create == 1: 
+			table_sql = "CREATE TABLE IF NOT EXISTS "
+			table_sql+="`"+table_name+"` (`label` int(11) NOT NULL,"
+			for i in range (0,k):
+				table_sql+="`instanceid"+str(i+1)+"` int(11) NOT NULL,"
+			
+			table_sql += "KEY `label` (`label`) ) "
+			db.add_table(table_sql, self.cursor)
 		sql = "select type, count(*) from location group by type"
 		result = db.read(sql, self.cursor)
 		type_count = {}
@@ -130,16 +135,16 @@ class Miner(object):
 		count_b = 0  
 		for i in range(0, length-1):
 			for j in range(i+1, length):
-				sql = "select * from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
+				sql = "select i.instanceid, j.instanceid from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
 				   + " and pow(i.x-j.x, 2) + pow(i.y-j.y, 2) <= "+str(R*R)
 				result = db.read(sql, self.cursor)	
 				A_temp = {}
 				B_temp = {}
 				count_a = 0
 				count_b = 0
-				for k in result:
-					a = str(k[0])
-					b = str(k[1])
+				for l in result:
+					a = str(l[0])
+					b = str(l[1])
 					if a not in A_temp:
 						count_a+=1
 						A_temp[a] = 0
@@ -149,8 +154,33 @@ class Miner(object):
 				participationIndex = 1.0*(count_a * count_b)
 				participationIndex = participationIndex / (type_count[candidate_list[i]] * type_count[candidate_list[j]])		
 				if( participationIndex >= self.minPrevalance):
-					print candidate_list[i], " ", candidate_list[j]
-
-
+					colocation_temp = str(candidate_list[i])+"|"+str(candidate_list[j])
+					# print colocation_temp
+					sql_candidate = "INSERT INTO candidate (colocation, pi, size) VALUES ("+colocation_temp+","+str(participationIndex)+", 2)"
+					# print sql_candidate
+					db.write(sql_candidate, self.cursor, self.conn)
+					sql_label = "SELECT max(label) FROM candidate"
+					# print sql_label
+					label_result = db.read(sql_label, self.cursor)
+					# print label_result
+					label = label_result[0][0]
+					# print label, "label"
+					sql_instance = "INSERT INTO "+table_name+" VALUES "
+					count = 1
+					for l in result:
+						a = str(l[0])
+						b = str(l[1])
+						sql_instance+="("+a+","+b+"),"
+						count+=1
+						if(count%5000 == 0):
+							if(sql_instance[-1]==','):
+								sql_instance = sql_instance[:-1]
+							db.write(sql_instance, self.cursor, self.conn)
+							sql_instance = "INSERT INTO "+table_name+" VALUES "
+							print count, "Items inserted into "+table_name+" table"
+					if(sql_instance[-1]==','):
+						sql_instance=sql_instance[:-1]
+					if(sql_instance[-1] == ')'):
+						db.write(sql_instance, self.cursor, self.conn)
 
 a = Miner()
