@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Nov 25, 2014 at 11:01 AM
+-- Generation Time: Nov 25, 2014 at 11:38 AM
 -- Server version: 5.5.40-0ubuntu0.14.04.1
 -- PHP Version: 5.5.9-1ubuntu4.5
 
@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `candidate` (
   `colocation` varchar(65500) NOT NULL,
   `label` int(11) NOT NULL AUTO_INCREMENT,
   `pi` int(11) NOT NULL,
+  `size` int(11) NOT NULL DEFAULT '1',
   PRIMARY KEY (`label`),
   UNIQUE KEY `label` (`label`),
   KEY `label_2` (`label`)
