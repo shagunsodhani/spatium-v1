@@ -4,7 +4,6 @@ import json
 from itertools import chain, combinations
 from collections import defaultdict
 from optparse import OptionParser
-# from apriori import Apriori
 from helper import create_table
 from helper import subset
 
@@ -13,28 +12,32 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.001, create_table=0, kmax = 4):
+	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.001, create_table=0, kmax = 4, clean=0, quiet=0):
 		
 		self.inFile = inFile
 		self.mappingFile = mappingFile
 		self.mapping = {}
-		self.instance_superset = {}
-		self.candidate_sizeone = {}
 		self.conn = db.connect(app_name)
 		self.cursor = self.conn.cursor()
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
 		self.create = create_table
+		self.clean = clean
+		self.quiet = quiet
 
 	def __del__(self):
 
-		truncate('location', self.cursor)
-		truncate('instance', self.cursor)
-		truncate('candidate', self.cursor)
-		k=self.kmax
-		for i in range(1,k+1):
-			table_name = "instance"+str(i)
-			drop(table_name, self.cursor)
+		if(se1f.clean==1):
+			db.truncate('location', self.cursor)
+			db.truncate('instance', self.cursor)
+			db.truncate('candidate', self.cursor)
+			k=self.kmax
+			for i in range(1,k+1):
+				table_name = "instance"+str(i)
+				db.drop(table_name, self.cursor)
+
+		if(self.quiet==0):
+			print "Destructing miner class"
 
 	def initialise(self):
 		"""To initialise the class variables"""
@@ -43,6 +46,7 @@ class Miner(object):
 		self.initialise_instance()
 	
 	def initialise_location(self):
+		"""To initialise location table"""
 		f_infile = open(self.inFile, 'r')
 		self.instance_superset = json.load(f_infile)
 		sql_location = "INSERT INTO location (instanceid, x, y, type) values "
@@ -55,13 +59,15 @@ class Miner(object):
 					sql_location=sql_location[:-1]
 				db.write(sql_location, self.cursor, self.conn)
 				sql_location = "INSERT INTO location (instanceid, x, y, type) values "
-				print count, "Items inserted into location table"
+				if(self.quiet==0):
+					print count, "Items inserted into location table"
 		if(sql_location[-1]==','):
 			sql_location=sql_location[:-1]
 		if(sql_location[-1] == ')'):
 			db.write(sql_location, self.cursor, self.conn)
 
 	def initialise_candidate(self):
+		"""To initialise candidate table"""
 		f_mapping = open(self.mappingFile, 'r')
 		self.mapping = json.load(f_mapping)
 		sql_candidate = "INSERT INTO candidate (colocation, pi) values "
@@ -72,10 +78,11 @@ class Miner(object):
 			if(count%5000 == 0):
 				if(sql_candidate[-1]==','):
 					sql_candidate=sql_candidate[:-1]
-				print sql_candidate
+				# print sql_candidate
 				db.write(sql_candidate, self.cursor, self.conn)
 				sql_candidate = "INSERT INTO candidate (colocation, pi) values "
-				print count, "Items inserted into candidate table"		
+				if(self.quiet==0):
+					print count, "Items inserted into candidate table"		
 		if(sql_candidate[-1]==','):
 			sql_candidate=sql_candidate[:-1]
 		if(sql_candidate[-1]==')'):
@@ -83,6 +90,7 @@ class Miner(object):
 			db.write(sql_candidate, self.cursor, self.conn)		
 
 	def initialise_instance(self):
+		"""To initialise instance table"""
 
 		sql = "select colocation, label from candidate where size = 1"
 		result = db.read(sql, self.cursor)
@@ -101,7 +109,8 @@ class Miner(object):
 				if(sql_instance[-1]==','):
 					sql_instance=sql_instance[:-1]
 				db.write(sql_instance, self.cursor, self.conn)
-				print count, "Items inserted into instance table"
+				if(self.quiet==0):
+					print count, "Items inserted into instance table"
 				sql_instance = "INSERT INTO instance (label, instance) values "
 		if(sql_instance[-1]==','):
 			sql_instance=sql_instance[:-1]
@@ -158,6 +167,7 @@ class Miner(object):
 						A_temp[a] = 0
 					if b not in B_temp:
 						count_b+=1
+						B_temp[b] = 0
 
 				participationIndex = 1.0*(count_a * count_b)
 				participationIndex = participationIndex / (type_count[candidate_list[i]] * type_count[candidate_list[j]])		
@@ -188,7 +198,8 @@ class Miner(object):
 							# print "precise"
 							db.write(sql_instance, self.cursor, self.conn)
 							sql_instance = "INSERT INTO "+table_instance_name+" VALUES "
-							print count, "Items inserted into "+table_instance_name+" table"
+							if(self.quiet==0):
+								print count, "Items inserted into "+table_instance_name+" table"
 					if(sql_instance[-1]==','):
 						sql_instance=sql_instance[:-1]
 					if(sql_instance[-1] == ')'):
@@ -331,7 +342,8 @@ class Miner(object):
 						# print "precise"
 						db.write(sql_instance, self.cursor, self.conn)
 						sql_instance = "INSERT INTO "+table_instance_name+" VALUES "
-						print count, "Items inserted into "+table_instance_name+" table"
+						if(self.quiet==0):
+							print count, "Items inserted into "+table_instance_name+" table"
 				if(sql_instance[-1]==','):
 					sql_instance=sql_instance[:-1]
 				if(sql_instance[-1] == ')'):
