@@ -7,9 +7,9 @@ sql = schema.read()
 
 count = 1
 for i in range(1,5):
-    sql_db = "CREATE DATABASE spatium"+str(count)
+    dbname = "spatium"+str(count)
     count+=1
-    create_db(sql_db, sql)
+    create_db(dbname, sql)
     start_time = time.time()
     mapping = "Input_Preprocessing/mapping"+str(i[1])+".json"
     inputfile = "Input_Preprocessing/input_preprocessed"+str(i[0])+".json"

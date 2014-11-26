@@ -27,20 +27,26 @@ config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', '
 
 
 
-def connect(app_name):
+def connect(app_name = "spatium", db_name = 1):
 
     '''Open database connection and return conn object to perform database queries'''
 
     host=config.get(app_name,"host")
     user=config.get(app_name,"user")
     passwd=config.get(app_name,"passwd")
-    db=config.get(app_name,"db")
+    if(db_name == 1):
+        db=config.get(app_name,"db")
+    else:
+        db = db_name
     charset=config.get(app_name,"charset")
     use_unicode=config.get(app_name,"use_unicode")
 
 
     try:
-        conn=MySQLdb.connect(host,user,passwd,db,charset=charset,use_unicode=use_unicode)
+        if (db_name==-1):
+            conn=MySQLdb.connect(host,user,passwd,charset=charset,use_unicode=use_unicode)
+        else:
+            conn=MySQLdb.connect(host,user,passwd,db,charset=charset,use_unicode=use_unicode)
         return conn
     except MySQLdb.Error, e:
         print "ERROR %d IN CONNECTION: %s" % (e.args[0], e.args[1])
@@ -110,24 +116,29 @@ def add_table(sql,cursor):
         print "LAST QUERY WAS: %s" %sql
 
 
-def create_db(sql_db, sql):
+def create_db(db_name, sql, app_name = "spatium"):
     '''Open database connection and return conn object to perform database queries'''
 
-    host=config.get(app_name,"host")
-    user=config.get(app_name,"user")
-    passwd=config.get(app_name,"passwd")
-    charset=config.get(app_name,"charset")
-    use_unicode=config.get(app_name,"use_unicode")
-
-    try:
-        conn=MySQLdb.connect(host,user,passwd,charset=charset,use_unicode=use_unicode)
-    except MySQLdb.Error, e:
-        print "ERROR %d IN CONNECTION: %s" % (e.args[0], e.args[1])
-        return 0
-
+    conn = connect(app_name, -1)
+    sql_db = "CREATE DATABASE "+db_name
     cursor = conn.cursor()
-    cursor.execute(sql_db)
-    cursor.execute(sql)
+    try:
+        cursor.execute(sql_db)
+    except MySQLdb.ProgrammingError, e:
+        print "ERROR %d IN CREATE DB OPERATION: %s" % (e.args[0], e.args[1])
+        print "LAST QUERY WAS: %s" %sql
+    
     cursor.close()
     conn.close()
-    return 1
+
+    conn = connect(app_name, db_name)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(sql_db)
+    except MySQLdb.ProgrammingError, e:
+        print "ERROR %d IN CREATE DB OPERATION: %s" % (e.args[0], e.args[1])
+        print "LAST QUERY WAS: %s" %sql
+    
+    cursor.close()
+    conn.close()    
+
