@@ -47,8 +47,6 @@ def connect(app_name):
         return 0
 
 
-
-
 def write(sql,cursor,conn):
     '''Perform insert and update operations on the databse.
        Need to pass the cursor object as a parameter'''
@@ -58,8 +56,6 @@ def write(sql,cursor,conn):
     except MySQLdb.ProgrammingError, e:
         print "ERROR %d IN WRITE OPERATION: %s" % (e.args[0], e.args[1])
         print "LAST QUERY WAS: %s" %sql
-
-
 
 
 def read(sql,cursor):
@@ -72,7 +68,6 @@ def read(sql,cursor):
     except MySQLdb.ProgrammingError, e:
         print "ERROR %d IN READ OPERATION: %s" % (e.args[0], e.args[1])
         print "LAST QUERY WAS: %s" %sql
-
 
 
 def truncate(table_name, cursor):
@@ -97,7 +92,6 @@ def check_column(table,column,cursor):
         print "LAST QUERY WAS: %s" %sql
 
 
-
 def add_column(sql,cursor):
     '''Used to add columns into tables'''
     try:
@@ -107,7 +101,6 @@ def add_column(sql,cursor):
         print "LAST QUERY WAS: %s" %sql
 
 
-
 def add_table(sql,cursor):
     '''Used to create a new table in the db'''
     try:
@@ -115,3 +108,26 @@ def add_table(sql,cursor):
     except MySQLdb.ProgrammingError, e:
         print "ERROR %d IN ADD TABLE OPERATION: %s" % (e.args[0], e.args[1])
         print "LAST QUERY WAS: %s" %sql
+
+
+def create_db(sql_db, sql):
+    '''Open database connection and return conn object to perform database queries'''
+
+    host=config.get(app_name,"host")
+    user=config.get(app_name,"user")
+    passwd=config.get(app_name,"passwd")
+    charset=config.get(app_name,"charset")
+    use_unicode=config.get(app_name,"use_unicode")
+
+    try:
+        conn=MySQLdb.connect(host,user,passwd,charset=charset,use_unicode=use_unicode)
+    except MySQLdb.Error, e:
+        print "ERROR %d IN CONNECTION: %s" % (e.args[0], e.args[1])
+        return 0
+
+    cursor = conn.cursor()
+    cursor.execute(sql_db)
+    cursor.execute(sql)
+    cursor.close()
+    conn.close()
+    return 1

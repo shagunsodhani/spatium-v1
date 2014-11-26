@@ -36,3 +36,4 @@ def subset(a):
         temp=temp[:-1]            
         result.append(temp)
     return result
+
