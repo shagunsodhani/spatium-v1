@@ -1,5 +1,7 @@
 import os
 import json
+import time
+import datetime
 
 f_output1 = open("mapping.json",'w')
 f_output2 = open("input_preprocessed.json",'w')
@@ -11,17 +13,29 @@ d_mapping = {}
 d_preprocessed = {}
 
 count = 1
+startDate = "2013-06-01"
+endDate = "2013-06-08"
+startTime = time.mktime(datetime.datetime.strptime(startDate,"%Y-%m-%d").timetuple())
+endTime = time.mktime(datetime.datetime.strptime(endDate,"%Y-%m-%d").timetuple())
+
+
 for x in d["data"]:
+	if 'None' not in str(x[26]): 
+		temp = str(x[26]).split('T')
+		
+		s = temp[0]
 
-	if (x[23] != None and x[24] != None):
-		d_preprocessed[x[8]] = {}
-		d_preprocessed[x[8]]["x_coordinate"] = x[23]
-		d_preprocessed[x[8]]["y_coordinate"] = x[24]
-		d_preprocessed[x[8]]["type"] = x[13]
+		tempTime = time.mktime(datetime.datetime.strptime(s,"%Y-%m-%d").timetuple())
+		if (x[23] != None and x[24] != None and (tempTime >= startTime) and (tempTime <= endTime)):
+			#print s,temp
+			d_preprocessed[x[8]] = {}
+			d_preprocessed[x[8]]["x_coordinate"] = x[23]
+			d_preprocessed[x[8]]["y_coordinate"] = x[24]
+			d_preprocessed[x[8]]["type"] = x[13]
 
-		if x[13] not in d_mapping:
-			d_mapping[x[13]] = count
-			count += 1
+			if x[13] not in d_mapping:
+				d_mapping[x[13]] = count
+				count += 1
 
 for x in d_preprocessed:
 	temp = d_preprocessed[x]["type"]
@@ -29,6 +43,7 @@ for x in d_preprocessed:
 
 '''
 Without Sampling
+'''
 json.dump(d_mapping,f_output1)
 f_output1.close()
 
@@ -36,12 +51,12 @@ json.dump(d_preprocessed,f_output2)
 f_output2.close()
 
 print "Total distinct features "+str(count)+'\n'
-'''
+
 
 '''
 Sampling Code
 '''
-
+'''
 d_final = {}
 d_mapping_final = {}
 
@@ -80,6 +95,21 @@ json.dump(d_temp_processed,f_output2)
 f_output2.close()
 
 print "Counter = "+str(counter)
+
+def date_to_timestamp(stime):
+	stime = stime.split('T')
+	date = stime[0]
+	temp = date.split("-")
+	a = []
+	a.append(int(temp[1]))
+	a.append(int(temp[2]))
+	a.append(int(temp[0]))
+	date = stime[1].split(':')
+	for i in date:
+		a.append(int(i))
+	a = datetime.datetime(a[0], a[1], a[2], a[3], a[4]).timetuple() 
+	return time.mktime(a)
+'''
 
 
 '''
