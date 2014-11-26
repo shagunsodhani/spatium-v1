@@ -45,7 +45,7 @@ class Miner(object):
 		self.initialise_candidate()
 		self.initialise_instance()
 	
-	def initialise_location(self):
+		def initialise_location(self):
 		"""To initialise location table"""
 		f_infile = open(self.inFile, 'r')
 		self.instance_superset = json.load(f_infile)
