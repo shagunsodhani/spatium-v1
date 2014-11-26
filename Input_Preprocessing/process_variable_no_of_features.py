@@ -2,23 +2,36 @@ import os
 import json
 import time
 import datetime
+import operator
 
 
-f_output1 = open("mapping4.json",'w')
-f_output2 = open("input_preprocessed4.json",'w')
+f_output1 = open("mapping_3.json",'w')
+f_output2 = open("input_preprocessed_3.json",'w')
 
 f_input = open("../data/input/Crimes_2013.json",'r')
-f_input1 = open("features.json",'r')
+f_input1 = open("features_k.json",'r')
 
 d = json.load(f_input)
 d_features = json.load(f_input1)
+
+sorted_x = sorted(d_features.iteritems(), key=operator.itemgetter(1))
+#print d_features
+
+d_features_k = {}
+count = 0
+k = 12  # Setting No.of features to considered
+for x in sorted_x:
+	if count == k:  
+		break
+	d_features_k[x[0]] = x[1]
+	count += 1
 
 d_mapping = {}
 d_preprocessed = {}
 
 #count = 1
 startDate = "2013-06-01"
-endDate = "2013-07-01"
+endDate = "2013-06-06"
 startTime = time.mktime(datetime.datetime.strptime(startDate,"%Y-%m-%d").timetuple())
 endTime = time.mktime(datetime.datetime.strptime(endDate,"%Y-%m-%d").timetuple())
 
@@ -30,7 +43,7 @@ for x in d["data"]:
 		s = temp[0]
 
 		tempTime = time.mktime(datetime.datetime.strptime(s,"%Y-%m-%d").timetuple())
-		if (x[23] != None and x[24] != None and (tempTime >= startTime) and (tempTime <= endTime) and (x[13] in d_features)):
+		if (x[23] != None and x[24] != None and (tempTime >= startTime) and (tempTime <= endTime) and (x[13] in d_features_k)):
 			#print s,temp
 			d_preprocessed[x[8]] = {}
 			d_preprocessed[x[8]]["x_coordinate"] = x[23]
@@ -38,7 +51,7 @@ for x in d["data"]:
 			d_preprocessed[x[8]]["type"] = x[13]
 
 			if x[13] not in d_mapping:
-				d_mapping[x[13]] = d_features[x[13]]
+				d_mapping[x[13]] = d_features_k[x[13]]
 				#count += 1
 
 for x in d_preprocessed:
@@ -54,4 +67,4 @@ f_output1.close()
 json.dump(d_preprocessed,f_output2)
 f_output2.close()
 
-print "Total no.of features = "+str(len(d_preprocessed))
+print "Total no.of instances = "+str(len(d_preprocessed))
