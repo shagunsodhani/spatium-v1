@@ -120,7 +120,7 @@ def create_db(db_name, sql, app_name = "spatium"):
     '''Open database connection and return conn object to perform database queries'''
 
     conn = connect(app_name, -1)
-    sql_db = "CREATE DATABASE "+db_name
+    sql_db = "CREATE DATABASE IF NOT EXISTS "+db_name
     cursor = conn.cursor()
     try:
         cursor.execute(sql_db)
@@ -134,7 +134,7 @@ def create_db(db_name, sql, app_name = "spatium"):
     conn = connect(app_name, db_name)
     cursor = conn.cursor()
     try:
-        cursor.execute(sql_db)
+        cursor.execute(sql)
     except MySQLdb.ProgrammingError, e:
         print "ERROR %d IN CREATE DB OPERATION: %s" % (e.args[0], e.args[1])
         print "LAST QUERY WAS: %s" %sql

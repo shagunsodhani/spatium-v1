@@ -12,12 +12,13 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.001, create_table=0, kmax = 4, clean=0, quiet=0):
+	def __init__(self, dbname, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.001, create_table = 0, kmax = 4, clean = 0, quiet = 0):
 		
 		self.inFile = inFile
 		self.mappingFile = mappingFile
 		self.mapping = {}
-		self.conn = db.connect(app_name)
+		print dbname
+		self.conn = db.connect(app_name, dbname)
 		self.cursor = self.conn.cursor()
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
@@ -25,19 +26,21 @@ class Miner(object):
 		self.clean = clean
 		self.quiet = quiet
 
-	def __del__(self):
+	# def __del__(self):
 
-		if(se1f.clean==1):
-			db.truncate('location', self.cursor)
-			db.truncate('instance', self.cursor)
-			db.truncate('candidate', self.cursor)
-			k=self.kmax
-			for i in range(1,k+1):
-				table_name = "instance"+str(i)
-				db.drop(table_name, self.cursor)
+	# 	if(se1f.clean==1):
+	# 		db.truncate('location', self.cursor)
+	# 		db.truncate('instance', self.cursor)
+	# 		db.truncate('candidate', self.cursor)
+	# 		k=self.kmax
+	# 		for i in range(1,k+1):
+	# 			table_name = "instance"+str(i)
+	# 			db.drop(table_name, self.cursor)
 
-		if(self.quiet==0):
-			print "Destructing miner class"
+	# 	self.cursor.close()
+	# 	self.conn.close()
+	# 	if(self.quiet==0):
+	# 		print "Destructing miner class"
 
 	def initialise(self):
 		"""To initialise the class variables"""
@@ -86,7 +89,7 @@ class Miner(object):
 		if(sql_candidate[-1]==','):
 			sql_candidate=sql_candidate[:-1]
 		if(sql_candidate[-1]==')'):
-			print sql_candidate
+			# print sql_candidate
 			db.write(sql_candidate, self.cursor, self.conn)		
 
 	def initialise_instance(self):
@@ -280,7 +283,8 @@ class Miner(object):
 			for j in range(1,k-1):	
 				sql+= "T1.instanceid"+str(j) + " = T2.instanceid"+str(j)+" AND "
 			sql+= " L1.instanceid = T1.instanceid"+str(k-1)+" AND L2.instanceid = T2.instanceid"+str(k-1)+" AND pow(L1.x-L2.x, 2) + pow(L1.y-L2.y, 2) <= "+str(R*R)
-			print sql
+			if(self.quiet == 0):
+				print sql
 			instance_result = db.read(sql, self.cursor)
 			# print instance_result
 			k_temp = {}

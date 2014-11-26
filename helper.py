@@ -13,7 +13,7 @@ def create_table(k, cursor):
     for i in range (0,k):
         table_instance_sql+="`instanceid"+str(i+1)+"` int(11) NOT NULL,"
     table_instance_sql += "KEY `label` (`label`) ) "
-    print table_instance_sql
+    # print table_instance_sql
     db.add_table(table_instance_sql, cursor)
     
     table_candidate_sql = "CREATE TABLE IF NOT EXISTS "
@@ -21,7 +21,7 @@ def create_table(k, cursor):
     for i in range (0,k):
         table_candidate_sql+="`typeid"+str(i+1)+"` int(11) NOT NULL,"    
     table_candidate_sql += "`pi` double NOT NULL, `labelprev1` int(11) NOT NULL, `labelprev2` int(11) NOT NULL, KEY `label` (`label`) ) "
-    print table_candidate_sql
+    # print table_candidate_sql
     db.add_table(table_candidate_sql, cursor)
 
 def subset(a):
