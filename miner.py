@@ -12,7 +12,7 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, dbname, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.001, create_table = 0, kmax = 4, clean = 0, quiet = 0):
+	def __init__(self, dbname, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=1000, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
 		
 		self.inFile = inFile
 		self.mappingFile = mappingFile
@@ -23,24 +23,16 @@ class Miner(object):
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
 		self.create = create_table
-		self.clean = clean
 		self.quiet = quiet
 
-	# def __del__(self):
-
-	# 	if(se1f.clean==1):
-	# 		db.truncate('location', self.cursor)
-	# 		db.truncate('instance', self.cursor)
-	# 		db.truncate('candidate', self.cursor)
-	# 		k=self.kmax
-	# 		for i in range(1,k+1):
-	# 			table_name = "instance"+str(i)
-	# 			db.drop(table_name, self.cursor)
-
-	# 	self.cursor.close()
-	# 	self.conn.close()
-	# 	if(self.quiet==0):
-	# 		print "Destructing miner class"
+	def clean(self):
+		db.truncate('location', self.cursor)
+		db.truncate('instance', self.cursor)
+		db.truncate('candidate', self.cursor)
+		k=self.kmax
+		for i in range(1,k+1):
+			table_name = "instance"+str(i)
+			db.drop(table_name, self.cursor)
 
 	def initialise(self):
 		"""To initialise the class variables"""
