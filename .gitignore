@@ -47,7 +47,7 @@ coverage.xml
 *.pot
 *.csv
 *.json
-
+*.txt
 # Django stuff:
 *.log
 
