@@ -11,11 +11,10 @@ config=ConfigParser()
 config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'config.cfg'))
 
 
-class graf(object):
+class Graf(object):
 	"""Class to generate html file that would generate the map using google maps api"""	
 
-	def __init__(self, dbname = "spatium", inFile = "Input_Preprocessing/plot_on_map.json", app_name = "spatium", lat = 0, lng = 0, zoom = 8, icon_size = 24):
-		
+x		
 		self.inFile = inFile
 		self.key = config.get(app_name, "map_key")
 		self.conn = db.connect(app_name, dbname)
@@ -31,7 +30,7 @@ class graf(object):
 	def plot_points(self):
 		"""To generate the html code for plotting points on the map"""
 		data = self.initialise()
-		self.bootstrap()
+		# self.bootstrap()
 		self.html+="function initialize() \n\
 					{\n\
 		            	var mapOptions = \n\
@@ -61,8 +60,8 @@ class graf(object):
 			
 		self.html+="}"
 
-		self.footer()
-		print self.html
+		# self.footer()
+		# print self.html
 
 	def plot_colocations(self, k):
 		"""To generate the html code for plotting colocations"""
@@ -121,9 +120,9 @@ class graf(object):
 		data = open(self.inFile, 'r')
 		return json.load(data)
 
-	def bootstrap(self):
-		"""To initialise html code"""
-		self.html = "<!DOCTYPE html>\n\
+	def bootstrap_default(self):
+		"""To initialise default html code"""
+		self.html+= "<!DOCTYPE html>\n\
 					 <html>\n\
 		  			 <head>\n\
 		  			 <style type=\"text/css\">\n\
@@ -132,7 +131,119 @@ class graf(object):
 	    			 <script type=\"text/javascript\" src=\"https://maps.googleapis.com/maps/api/js?key="+self.key+"\"></script>\n\
 	    			 <script type=\"text/javascript\">\n"
 
-	def footer(self):
+	def bootstrap_demo(self):
+		"""To add the bootstrap code for demo html files"""
+		self.html+="<!DOCTYPE html>\n\
+					<html lang=\"en\">\n\
+					<head>\n\
+					<meta charset=\"utf-8\">\n\
+					<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n\
+					<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\
+					<title>Spatium</title>\n\
+				    <link href=\"bootstrap/css/bootstrap.min.css\" rel=\"stylesheet\">\n\
+				    <link href=\"bootstrap/css/spatium.css\" rel=\"stylesheet\">\n\
+	    			<style type=\"text/css\">\n\
+      				html, body, .container-fluid, .row, .main, #map-canvas { height: 100%; margin-left: 0; padding-left: 5%;}\n\
+    				</style>\n\
+    				<script type=\"text/javascript\"\n\
+      				src=\"https://maps.googleapis.com/maps/api/js?key="+str(self.key)+"\"></script>\n\
+    				<script type=\"text/javascript\">\n"
+
+    def footer_demo(self):
+    	"""To add the footer code for demo html files"""
+    	self.html+="</head>\n\
+    				<body>\n\
+    				<nav class=\"navbar navbar-inverse navbar-fixed-top\" role=\"navigation\">\n\
+	      				<div class=\"container-fluid\">\n\
+	        				<div class=\"navbar-header\">\n\
+		          				<button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">\n\
+			            			<span class=\"sr-only\">Toggle navigation</span>\n\
+			            			<span class=\"icon-bar\"></span>\n\
+						            <span class=\"icon-bar\"></span>\n\
+						            <span class=\"icon-bar\"></span>\n\
+						        </button>\n\
+					          	<a class=\"navbar-brand\" href=\"#\">Spatium</a>\n\
+	        				</div>\n\
+	        				<div class=\"collapse navbar-collapse\" id=\"bs-example-navbar-collapse-1\">\n\
+	      						<ul class=\"nav navbar-nav navbar-right\">\n\							        <li class=\"dropdown\">\n\
+								        <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\">Threshold Distance<span class=\"caret\"></span></a>\n\
+								        <ul class=\"dropdown-menu\" role=\"menu\">\n\
+								        	<li><a href=\"#\">1</a></li>\n\
+								            <li><a href=\"#\">2</a></li>\n\
+								            <li><a href=\"#\">3</a></li>\n\
+								        </ul>\n\
+							    	</li>\n\
+						        	<li class=\"dropdown\">\n\
+		          						<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\">Participation Index <span class=\"caret\"></span></a>\n\
+		          						<ul class=\"dropdown-menu\" role=\"menu\">\n\
+		            						<li><a href=\"#\">1</a></li>\n\
+								            <li><a href=\"#\">2</a></li>\n\
+								            <li><a href=\"#\">3</a></li>\n\
+								        </ul>\n\
+								    </li>\n\
+							        <li class=\"dropdown\">\n\
+								        <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\">Size of Co-location <span class=\"caret\"></span></a>\n\
+								       	<ul class=\"dropdown-menu\" role=\"menu\">\n\
+								           	<li><a href=\"#\">1</a></li>\n\
+								           	<li><a href=\"#\">2</a></li>\n\
+								          	<li><a href=\"#\">3</a></li>\n\
+								       	</ul>\n\
+							        </li>\n\
+		      					</ul>\n\
+						    </div>\n\
+						</nav>\n\
+    				<div class=\"container-fluid\">\n\
+				    	<div class=\"row\">\n\
+				        	<div class=\"col-sm-3 col-md-2 sidebar\">\n\
+				          		<ul class=\"nav nav-sidebar\">\n\
+						            <li class=\"active\"><a href=\"#\">Demo <span class=\"sr-only\">(current)</span></a></li>\n\
+						            <li><a href=\"#\">Dataset</a></li>\n\
+						            <li><a href=\"#\">Analytics</a></li>\n\
+						            <li><a href=\"#\">Team</a></li>\n\
+				          		</ul>\n\
+	        				</div>\n\
+	        				<div class=\"col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main\">\n\
+	          					<h1 class=\"page-header\">Map</h1>\n\
+	          					<div class=\"row placeholders\">\n\
+	            					<div class=\"col-sm-12\" id=\"map-canvas\" >\n\
+	              						<h4>Label</h4>\n\
+	              						<span class=\"text-muted\">Something else</span>\n\
+	            					</div>\n\
+	          					</div>\n\
+	          					<h2 class=\"sub-header\">Section title</h2>\n\
+	          						<div class=\"table-responsive\">\n\
+	            						<table class=\"table table-striped\">\n\
+	              							<thead>\n\
+	                							<tr>\n\
+	                  								<th>#</th>\n\
+	                  								<th>Header</th>\n\
+	                  								<th>Header</th>\n\
+									                <th>Header</th>\n\
+									                <th>Header</th>\n\
+									            </tr>\n\
+									        </thead>\n\
+									        <tbody>\n\
+									            <tr>\n\
+										            <td>1,001</td>\n\
+										            <td>Lorem</td>\n\
+										            <td>ipsum</td>\n\
+										            <td>dolor</td>\n\
+										            <td>sit</td>\n\
+									        	</tr>\n\
+									        </tbody>\n\
+									    </table>\n\
+									</div>\n\
+								</div>\n\
+							</div>\n\
+						</div>\n\
+					</div>\n\
+	<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n\
+    <script src=\"bootstrap/js/bootstrap.min.js\"></script>\n\
+  	</body>\n\
+	</html>\n"
+
+
+	def footer_default(self):
 		"""To add the footer"""
 		self.html+="google.maps.event.addDomListener(window, 'load', initialize);\n\
 			    </script>\n</head>\n\
@@ -140,8 +251,3 @@ class graf(object):
 		            <div id=\"map-canvas\"></div>\n\
 		            </body>\n\
 		            </html>\n"
-
-
-a = graf(lat = "41.838915902", lng = "-87.72820175", dbname = "spatium_I3")
-# a.plot_colocations(k=3)
-a.plot_points()
