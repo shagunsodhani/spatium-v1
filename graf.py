@@ -14,13 +14,27 @@ config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', '
 class graf(object):
 	"""Class to generate html file that would generate the map using google maps api"""	
 
-	def __init__(self, inFile = "Input_Preprocessing/plot_on_map.json", app_name = "spatium", lat = 0, lng = 0):
+	def __init__(self, inFile = "Input_Preprocessing/plot_on_map.json", app_name = "spatium", lat = 0, lng = 0, zoom = 8):
 		
 		self.inFile = inFile
 		self.key = config.get(app_name, "map_key")
 		self.html = ''
 		self.lat = lat
 		self.lng = lng
+		self.zoom = 8
+		self.markers = []
+		prefix = "google.maps.SymbolPath."
+		a = prefix+"CIRCLE"
+		self.markers.append(a)
+		a = prefix+"FORWARD_OPEN_ARROW"
+		self.markers.append(a)
+		a = prefix+"BACKWARD_OPEN_ARROW"
+		self.markers.append(a)
+		a = prefix+"FORWARD_CLOSED_ARROW"
+		self.markers.append(a)
+		a = prefix+"BACKWARD_CLOSED_ARROW"
+		self.markers.append(a)
+		self.mapping = {}
 		# self.data = {}
 
 	def gen_html(self):
@@ -37,11 +51,23 @@ class graf(object):
         				};\n\
         				var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);\n"
         	# print data
+        	count = 0
         	for i in data:
         		self.html+="var myLatLng = new google.maps.LatLng("+str(data[i]['latitude'])+", "+str(data[i]['longitude'])+");\n\
 	          		    var beachMarker = new google.maps.Marker({\n\
 	          		    position: myLatLng,\n\
 				    map: map,\n\
+				    icon: {\n"
+
+			marker_type = data[i]['type'] 
+			if marker_type not in self.mapping:
+				self.mapping[marker_type] = self.markers[count]
+				count+=1
+				    
+			self.html+="path: "+str(self.mapping[marker_type])+",\n\
+      				    scale: 4\n\
+    					},\n\
+    				    draggable: true,\n\
 	         		    });\n"
 		
 		self.html+="}\ngoogle.maps.event.addDomListener(window, 'load', initialize);\n\
