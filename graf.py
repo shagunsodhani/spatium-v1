@@ -14,7 +14,7 @@ config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', '
 class graf(object):
 	"""Class to generate html file that would generate the map using google maps api"""	
 
-	def __init__(self, dbname = "spatium", inFile = "Input_Preprocessing/plot_on_map.json", app_name = "spatium", lat = 0, lng = 0, zoom = 8):
+	def __init__(self, dbname = "spatium", inFile = "Input_Preprocessing/plot_on_map.json", app_name = "spatium", lat = 0, lng = 0, zoom = 8, icon_size = 24):
 		
 		self.inFile = inFile
 		self.key = config.get(app_name, "map_key")
@@ -24,7 +24,7 @@ class graf(object):
 		self.lat = lat
 		self.lng = lng
 		self.zoom = 8
-		self.markers = []
+		self.icon_size = icon_size
 		self.mapping = {}
 		# self.data = {}
 
@@ -32,8 +32,7 @@ class graf(object):
 		"""To generate the html code for plotting points on the map"""
 		data = self.initialise()
 		self.bootstrap()
-		self.html+="<script type=\"text/javascript\">\n\
-					function initialize() \n\
+		self.html+="function initialize() \n\
 					{\n\
 		            	var mapOptions = \n\
 		            	{\n\
@@ -42,25 +41,24 @@ class graf(object):
         				};\n\
         				var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);\n"
         	# print data
-        	count = 0
+        	count = 1
         	for i in data:
-        		self.html+="var myLatLng = new google.maps.LatLng("+str(data[i]['latitude'])+", "+str(data[i]['longitude'])+");\n\
+
+        		marker_type = data[i]['type'] 
+			if marker_type not in self.mapping:
+				self.mapping[marker_type] = "assets/map/pins/"+str(self.icon_size)+"/pin"+str(count)+".png"
+				count+=1
+
+        		self.html+="var image = \'"+str(self.mapping[marker_type])+"\';\n\
+	               		    var myLatLng = new google.maps.LatLng("+str(data[i]['latitude'])+", "+str(data[i]['longitude'])+");\n\
 	          		    var beachMarker = new google.maps.Marker({\n\
 	          		    position: myLatLng,\n\
 				    map: map,\n\
-				    icon: {\n"
-
-			marker_type = data[i]['type'] 
-			if marker_type not in self.mapping:
-				self.mapping[marker_type] = self.markers[count]
-				count+=1
-				    
-			self.html+="path: "+str(self.mapping[marker_type])+",\n\
-      				    scale: 4\n\
-    					},\n\
+				    icon: image,\n\
     				    draggable: true,\n\
 	         		    });\n"
-		
+
+			
 		self.html+="}"
 
 		self.footer()
@@ -120,17 +118,6 @@ class graf(object):
 
 	def initialise(self):
 		"""To initialise variables by reading from the json file"""
-		prefix = "google.maps.SymbolPath."
-		a = prefix+"CIRCLE"
-		self.markers.append(a)
-		a = prefix+"FORWARD_OPEN_ARROW"
-		self.markers.append(a)
-		a = prefix+"BACKWARD_OPEN_ARROW"
-		self.markers.append(a)
-		a = prefix+"FORWARD_CLOSED_ARROW"
-		self.markers.append(a)
-		a = prefix+"BACKWARD_CLOSED_ARROW"
-		self.markers.append(a)
 		data = open(self.inFile, 'r')
 		return json.load(data)
 
@@ -156,4 +143,5 @@ class graf(object):
 
 
 a = graf(lat = "41.838915902", lng = "-87.72820175", dbname = "spatium_I3")
-a.plot_colocations(k=3)
+# a.plot_colocations(k=3)
+a.plot_points()
