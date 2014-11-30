@@ -17,7 +17,7 @@ class Miner(object):
 		self.inFile = inFile
 		self.mappingFile = mappingFile
 		self.mapping = {}
-		print dbname
+		# print dbname
 		self.conn = db.connect(app_name, dbname)
 		self.cursor = self.conn.cursor()
 		self.threshold_distance = threshold_distance
@@ -44,10 +44,10 @@ class Miner(object):
 		"""To initialise location table"""
 		f_infile = open(self.inFile, 'r')
 		self.instance_superset = json.load(f_infile)
-		sql_location = "INSERT INTO location (instanceid, x, y, type) values "
+		sql_location = "INSERT INTO location (instanceid, x, y, type, lat, lng) values "
 		count = 1
 		for i in self.instance_superset:
-			sql_location +="("+str(i)+","+str(self.instance_superset[i]['x_coordinate'])+","+str(self.instance_superset[i]['y_coordinate'])+","+str(self.instance_superset[i]['type'])+"),"
+			sql_location +="("+str(i)+","+str(self.instance_superset[i]['x_coordinate'])+","+str(self.instance_superset[i]['y_coordinate'])+","+str(self.instance_superset[i]['type']) + "," + str(self.instance_superset[i]['latitude'])+","+str(self.instance_superset[i]['longitude']) + "),"
 			count = (count+1)
 			if(count%5000 == 0):
 				if(sql_location[-1]==','):
