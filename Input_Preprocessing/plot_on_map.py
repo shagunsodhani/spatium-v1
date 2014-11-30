@@ -25,13 +25,12 @@ for x in d["data"]:
 		s = temp[0]
 
 		tempTime = time.mktime(datetime.datetime.strptime(s,"%Y-%m-%d").timetuple())
-		if (x[23] != None and x[24] != None and (tempTime >= startTime) and (tempTime <= endTime) and (x[13]=="ASSAULT" or x[13]=="BATTERY")):
+		if (x[23] != None and x[24] != None and (tempTime >= startTime) and (tempTime <= endTime) and (x[13]=="ASSAULT" or x[13]=="BATTERY" or x[13] =="CRIMINAL DAMAGE")):
 			#print s,temp
-			if x[13] not in d_preprocessed:
-				d_preprocessed[x[13]] = {}
-			d_preprocessed[x[13]][x[8]] = {}
-			d_preprocessed[x[13]][x[8]]["latitude"] = x[27]
-			d_preprocessed[x[13]][x[8]]["longitude"] = x[28]
+			d_preprocessed[x[8]] = {}
+			d_preprocessed[x[8]]["type"] = x[13]
+			d_preprocessed[x[8]]["latitude"] = x[27]
+			d_preprocessed[x[8]]["longitude"] = x[28]
 			#d_preprocessed[x[8]]["type"] = x[13]
 
 json.dump(d_preprocessed,f_output)
