@@ -12,9 +12,10 @@ config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', '
 
 
 class Graf(object):
-	"""Class to generate html file that would generate the map using google maps api"""	
+	"""Class to generate html file that would generate the map using google maps api"""
 
-x		
+	def __init__(self, dbname = "spatium", inFile = "Input_Preprocessing/plot_on_map.json", app_name = "spatium", lat = 0, lng = 0, zoom = 8, icon_size = 24):
+
 		self.inFile = inFile
 		self.key = config.get(app_name, "map_key")
 		self.conn = db.connect(app_name, dbname)
@@ -39,16 +40,14 @@ x
 			        	zoom: "+str(self.zoom)+"\n\
         				};\n\
         				var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);\n"
-        	# print data
-        	count = 1
-        	for i in data:
-
-        		marker_type = data[i]['type'] 
+		count = 1
+		for i in data:
+			marker_type = data[i]['type'] 
 			if marker_type not in self.mapping:
 				self.mapping[marker_type] = "assets/map/pins/"+str(self.icon_size)+"/pin"+str(count)+".png"
 				count+=1
 
-        		self.html+="var image = \'"+str(self.mapping[marker_type])+"\';\n\
+			self.html+="var image = \'"+str(self.mapping[marker_type])+"\';\n\
 	               		    var myLatLng = new google.maps.LatLng("+str(data[i]['latitude'])+", "+str(data[i]['longitude'])+");\n\
 	          		    var beachMarker = new google.maps.Marker({\n\
 	          		    position: myLatLng,\n\
@@ -149,9 +148,10 @@ x
       				src=\"https://maps.googleapis.com/maps/api/js?key="+str(self.key)+"\"></script>\n\
     				<script type=\"text/javascript\">\n"
 
-    def footer_demo(self):
-    	"""To add the footer code for demo html files"""
-    	self.html+="</head>\n\
+	def footer_demo(self):
+		"""To add the footer code for demo html files"""
+		self.html+="google.maps.event.addDomListener(window, 'load', initialize);\n\
+			    </script>\n</head>\n\
     				<body>\n\
     				<nav class=\"navbar navbar-inverse navbar-fixed-top\" role=\"navigation\">\n\
 	      				<div class=\"container-fluid\">\n\
@@ -237,10 +237,10 @@ x
 							</div>\n\
 						</div>\n\
 					</div>\n\
-	<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n\
-    <script src=\"bootstrap/js/bootstrap.min.js\"></script>\n\
-  	</body>\n\
-	</html>\n"
+					<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n\
+				    <script src=\"bootstrap/js/bootstrap.min.js\"></script>\n\
+				  	</body>\n\
+					</html>\n"
 
 
 	def footer_default(self):
