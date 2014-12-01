@@ -26,6 +26,10 @@ class Graf(object):
 		self.zoom = 8
 		self.icon_size = icon_size
 		self.mapping = {}
+		self.color_mapping = {}
+		self.color_mapping[1] = "#FF0000"
+		self.color_mapping[2] = "#0404B4"
+		self.color_mapping[3] = "#088A08"
 		# self.data = {}
 
 	def plot_points(self):
@@ -69,8 +73,8 @@ class Graf(object):
 		sql = "SELECT "
 		for i in range(1,k+1):
 			sql+="l"+str(i)+".lat, l"+str(i)+".lng, "
-		sql=sql[:-2]
-		sql+=" FROM instance"+str(k)+", "
+		# sql=sql[:-2]
+		sql+="label FROM instance"+str(k)+", "
 		sql_b = " WHERE "
 		for i in range(1,k+1):
 			sql+="location l"+str(i)+", "
@@ -79,9 +83,11 @@ class Graf(object):
 		sql+=sql_b
 		sql=sql[:-4]
 
-		print sql
+		# print sql
 		
 		result = db.read(sql, self.cursor)
+		
+		# print result
 		self.html+="function initialize() \n\
 			    {\n\
 		            	var mapOptions = \n\
@@ -91,24 +97,25 @@ class Graf(object):
         				};\n\
         			var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);\n\
 				var precise;\n"
-		for i in result:
-			a = ''
-			for j in range (0,2*k-1,2):
-				a+="new google.maps.LatLng("+str(i[j])+", "+str(i[j+1])+"),\n"
-			a = a.strip('\n')
-			a = a[:-1]
-				# print a
+		if result:
+			for i in result:
+				a = ''
+				for j in range (0,2*k-1,2):
+					a+="new google.maps.LatLng("+str(i[j])+", "+str(i[j+1])+"),\n"
+				a = a.strip('\n')
+				a = a[:-1]
+					# print a
 
-			self.html+="var triangleCoords = ["+a+"];\n\
-				      precise = new google.maps.Polygon({\n\
-					paths: triangleCoords,\n\
-				        strokeColor: '#FF0000',\n\
-				        strokeOpacity: 0.8,\n\
-				        strokeWeight: 2,\n\
-				        fillColor: '#FF0000',\n\
-				        fillOpacity: 0.2\n\
-				      });\n\
-				      precise.setMap(map);\n"
+				self.html+="var triangleCoords = ["+a+"];\n\
+					      precise = new google.maps.Polygon({\n\
+						paths: triangleCoords,\n\
+					        strokeColor: '"+str(self.color_mapping[i[-1]])+"',\n\
+					        strokeOpacity: 0.8,\n\
+					        strokeWeight: 2,\n\
+					        fillColor: '"+str(self.color_mapping[i[-1]])+"',\n\
+					        fillOpacity: 0.2\n\
+					      });\n\
+					      precise.setMap(map);\n"
 		self.html+="}\n"
 
 	def initialise(self):
@@ -118,7 +125,7 @@ class Graf(object):
 
 	def bootstrap_default(self):
 		"""To initialise default html code"""
-		self.html+= "<!DOCTYPE html>\n\
+		self.html= "<!DOCTYPE html>\n\
 					 <html>\n\
 		  			 <head>\n\
 		  			 <style type=\"text/css\">\n\
@@ -129,7 +136,7 @@ class Graf(object):
 
 	def bootstrap_demo(self):
 		"""To add the bootstrap code for demo html files"""
-		self.html+="<!DOCTYPE html>\n\
+		self.html="<!DOCTYPE html>\n\
 					<html lang=\"en\">\n\
 					<head>\n\
 					<meta charset=\"utf-8\">\n\
@@ -147,7 +154,7 @@ class Graf(object):
 
 	def body_demo(self):
 		"""To add the footer code for demo html files"""
-		self.html+="google.maps.event.addDomListener(window, 'load', initialize);\n\
+		self.html="google.maps.event.addDomListener(window, 'load', initialize);\n\
 			    </script>\n</head>\n\
     				<body>\n\
     				<nav class=\"navbar navbar-inverse navbar-fixed-top\" role=\"navigation\">\n\
@@ -241,7 +248,7 @@ class Graf(object):
 
 	def body_static(self, R, PI, K):
 		"""To add the body code for static files"""
-		self.html+="google.maps.event.addDomListener(window, 'load', initialize);\n\
+		self.html="google.maps.event.addDomListener(window, 'load', initialize);\n\
 			    </script>\n</head>\n\
     				<body>\n\
     				<nav class=\"navbar navbar-inverse navbar-fixed-top\" role=\"navigation\">\n\
@@ -269,18 +276,18 @@ class Graf(object):
 				    	<div class=\"row\">\n\
 				        	<div class=\"col-sm-3 col-md-2 sidebar\">\n\
 				          		<ul class=\"nav nav-sidebar\">\n\
-						        	<li><a href=\"html/1.html\">R = 1000, PI = 0.1, K = 1</a></li>\n\
-						            <li><a href=\"html/2.html\">R = 1000, PI = 0.1, K = 2</a></li>\n\
-						            <li><a href=\"html/3.html\">R = 1000, PI = 0.1, K = 3</a></li>\n\
-						            <li><a href=\"html/4.html\">R = 1000, PI = 0.6, K = 1</a></li>\n\
-						            <li><a href=\"html/5.html\">R = 1000, PI = 0.6, K = 2</a></li>\n\
-						            <li><a href=\"html/6.html\">R = 1000, PI = 0.6, K = 3</a></li>\n\
-						            <li><a href=\"html/7.html\">R = 2000, PI = 0.1, K = 1</a></li>\n\
-						            <li><a href=\"html/8.html\">R = 2000, PI = 0.1, K = 2</a></li>\n\
-						            <li><a href=\"html/9.html\">R = 2000, PI = 0.1, K = 3</a></li>\n\
-						            <li><a href=\"html/10.html\">R = 2000, PI = 0.6, K = 1</a></li>\n\
-						            <li><a href=\"html/11.html\">R = 2000, PI = 0.6, K = 2</a></li>\n\
-						            <li><a href=\"html/12.html\">R = 2000, PI = 0.6, K = 3</a></li>\n\
+						        	<li><a href=\"1.html\">R = 1000, PI = 0.1, K = 1</a></li>\n\
+						            <li><a href=\"2.html\">R = 1000, PI = 0.1, K = 2</a></li>\n\
+						            <li><a href=\"3.html\">R = 1000, PI = 0.1, K = 3</a></li>\n\
+						            <li><a href=\"4.html\">R = 1000, PI = 0.6, K = 1</a></li>\n\
+						            <li><a href=\"5.html\">R = 1000, PI = 0.6, K = 2</a></li>\n\
+						            <li><a href=\"6.html\">R = 1000, PI = 0.6, K = 3</a></li>\n\
+						            <li><a href=\"7.html\">R = 2000, PI = 0.1, K = 1</a></li>\n\
+						            <li><a href=\"8.html\">R = 2000, PI = 0.1, K = 2</a></li>\n\
+						            <li><a href=\"9.html\">R = 2000, PI = 0.1, K = 3</a></li>\n\
+						            <li><a href=\"10.html\">R = 2000, PI = 0.6, K = 1</a></li>\n\
+						            <li><a href=\"11.html\">R = 2000, PI = 0.6, K = 2</a></li>\n\
+						            <li><a href=\"12.html\">R = 2000, PI = 0.6, K = 3</a></li>\n\
 				          		</ul>\n\
 	        				</div>\n\
 	        				<div class=\"col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main\">\n\
@@ -321,7 +328,7 @@ class Graf(object):
 
 	def body_default(self):
 		"""To add the footer"""
-		self.html+="google.maps.event.addDomListener(window, 'load', initialize);\n\
+		self.html="google.maps.event.addDomListener(window, 'load', initialize);\n\
 			    </script>\n</head>\n\
 		            <body>\n\
 		            <div id=\"map-canvas\"></div>\n\
