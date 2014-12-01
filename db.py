@@ -117,7 +117,7 @@ def add_table(sql,cursor):
 
 
 def create_db(db_name, sql, app_name = "spatium"):
-    '''Open database connection and return conn object to perform database queries'''
+    '''Create Database'''
 
     conn = connect(app_name, -1)
     sql_db = "CREATE DATABASE IF NOT EXISTS "+db_name
@@ -142,3 +142,18 @@ def create_db(db_name, sql, app_name = "spatium"):
     cursor.close()
     conn.close()    
 
+def delete_db(db_name, app_name = "spatium"):
+    '''Delete Database'''
+
+    conn = connect(app_name, -1)
+    sql = "DROP DATABASE "+db_name
+    print sql
+    cursor = conn.cursor()
+    try:
+        cursor.execute(sql)
+    except MySQLdb.ProgrammingError, e:
+        print "ERROR %d IN DELETE DB OPERATION: %s" % (e.args[0], e.args[1])
+        print "LAST QUERY WAS: %s" %sql
+    
+    cursor.close()
+    conn.close()
