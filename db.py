@@ -150,10 +150,14 @@ def delete_db(db_name, app_name = "spatium"):
     print sql
     cursor = conn.cursor()
     try:
+        print "shagun"
         cursor.execute(sql)
+        print "1"
+        conn.commit()
+        print "2"
     except MySQLdb.ProgrammingError, e:
         print "ERROR %d IN DELETE DB OPERATION: %s" % (e.args[0], e.args[1])
         print "LAST QUERY WAS: %s" %sql
-    
     cursor.close()
     conn.close()
+    print sql
