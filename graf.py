@@ -64,7 +64,7 @@ class Graf(object):
 
 	def plot_colocations(self, k):
 		"""To generate the html code for plotting colocations"""
-		self.bootstrap()
+		# self.bootstrap_demo()
 
 		sql = "SELECT "
 		for i in range(1,k+1):
@@ -74,13 +74,14 @@ class Graf(object):
 		sql_b = " WHERE "
 		for i in range(1,k+1):
 			sql+="location l"+str(i)+", "
-			sql_b+="l"+str(i)+".instanceid = instance3.instanceid"+str(i)+" AND " 
+			sql_b+="l"+str(i)+".instanceid = instance"+str(k)+".instanceid"+str(i)+" AND " 
 		sql=sql[:-2]
 		sql+=sql_b
 		sql=sql[:-4]
+
+		print sql
 		
 		result = db.read(sql, self.cursor)
-		result = []
 		self.html+="function initialize() \n\
 			    {\n\
 		            	var mapOptions = \n\
@@ -89,30 +90,26 @@ class Graf(object):
 			        	zoom: "+str(self.zoom)+"\n\
         				};\n\
         			var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);\n\
-				var bermudaTriangle;\n"
+				var precise;\n"
 		for i in result:
 			a = ''
-			for j in range (0,k):
-				a+="new google.maps.LatLng("+str(i[j][0])+", "+str(i[j][1])+",\n"
+			for j in range (0,2*k-1,2):
+				a+="new google.maps.LatLng("+str(i[j])+", "+str(i[j+1])+"),\n"
 			a = a.strip('\n')
 			a = a[:-1]
-			# print a
+				# print a
 
 			self.html+="var triangleCoords = ["+a+"];\n\
-			      bermudaTriangle = new google.maps.Polygon({\n\
-				paths: triangleCoords,\n\
-			        strokeColor: '#FF0000',\n\
-			        strokeOpacity: 0.8,\n\
-			        strokeWeight: 2,\n\
-			        fillColor: '#FF0000',\n\
-			        fillOpacity: 0.35\n\
-			      });\n\
-			      bermudaTriangle.setMap(map);\n"
-		
-		self.html+"}\n"
-		self.footer()
-		print self.html
-		# print sql
+				      precise = new google.maps.Polygon({\n\
+					paths: triangleCoords,\n\
+				        strokeColor: '#FF0000',\n\
+				        strokeOpacity: 0.8,\n\
+				        strokeWeight: 2,\n\
+				        fillColor: '#FF0000',\n\
+				        fillOpacity: 0.2\n\
+				      });\n\
+				      precise.setMap(map);\n"
+		self.html+="}\n"
 
 	def initialise(self):
 		"""To initialise variables by reading from the json file"""
@@ -148,7 +145,7 @@ class Graf(object):
       				src=\"https://maps.googleapis.com/maps/api/js?key="+str(self.key)+"\"></script>\n\
     				<script type=\"text/javascript\">\n"
 
-	def footer_demo(self):
+	def body_demo(self):
 		"""To add the footer code for demo html files"""
 		self.html+="google.maps.event.addDomListener(window, 'load', initialize);\n\
 			    </script>\n</head>\n\
@@ -242,8 +239,87 @@ class Graf(object):
 				  	</body>\n\
 					</html>\n"
 
+	def body_static(self, R, PI, K):
+		"""To add the body code for static files"""
+		self.html+="google.maps.event.addDomListener(window, 'load', initialize);\n\
+			    </script>\n</head>\n\
+    				<body>\n\
+    				<nav class=\"navbar navbar-inverse navbar-fixed-top\" role=\"navigation\">\n\
+	      				<div class=\"container-fluid\">\n\
+	        				<div class=\"navbar-header\">\n\
+		          				<button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">\n\
+			            			<span class=\"sr-only\">Toggle navigation</span>\n\
+			            			<span class=\"icon-bar\"></span>\n\
+						            <span class=\"icon-bar\"></span>\n\
+						            <span class=\"icon-bar\"></span>\n\
+						        </button>\n\
+					          	<a class=\"navbar-brand\" href=\"#\">Spatium</a>\n\
+	        				</div>\n\
+	        				<div class=\"collapse navbar-collapse navbar-right\" id=\"bs-example-navbar-collapse-1\">\n\
+	      						<button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">\n\
+			            			<span class=\"sr-only\">Toggle navigation</span>\n\
+			            			<span class=\"icon-bar\"></span>\n\
+						            <span class=\"icon-bar\"></span>\n\
+						            <span class=\"icon-bar\"></span>\n\
+						        </button>\n\
+					          	<a class=\"navbar-brand\" href=\"https://github.com/shagunsodhani/spatium\">Github</a>\n\
+						    </div>\n\
+						</nav>\n\
+    				<div class=\"container-fluid\">\n\
+				    	<div class=\"row\">\n\
+				        	<div class=\"col-sm-3 col-md-2 sidebar\">\n\
+				          		<ul class=\"nav nav-sidebar\">\n\
+						        	<li><a href=\"html/1.html\">R = 1000, PI = 0.1, K = 1</a></li>\n\
+						            <li><a href=\"html/2.html\">R = 1000, PI = 0.1, K = 2</a></li>\n\
+						            <li><a href=\"html/3.html\">R = 1000, PI = 0.1, K = 3</a></li>\n\
+						            <li><a href=\"html/4.html\">R = 1000, PI = 0.6, K = 1</a></li>\n\
+						            <li><a href=\"html/5.html\">R = 1000, PI = 0.6, K = 2</a></li>\n\
+						            <li><a href=\"html/6.html\">R = 1000, PI = 0.6, K = 3</a></li>\n\
+						            <li><a href=\"html/7.html\">R = 2000, PI = 0.1, K = 1</a></li>\n\
+						            <li><a href=\"html/8.html\">R = 2000, PI = 0.1, K = 2</a></li>\n\
+						            <li><a href=\"html/9.html\">R = 2000, PI = 0.1, K = 3</a></li>\n\
+						            <li><a href=\"html/10.html\">R = 2000, PI = 0.6, K = 1</a></li>\n\
+						            <li><a href=\"html/11.html\">R = 2000, PI = 0.6, K = 2</a></li>\n\
+						            <li><a href=\"html/12.html\">R = 2000, PI = 0.6, K = 3</a></li>\n\
+				          		</ul>\n\
+	        				</div>\n\
+	        				<div class=\"col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main\">\n\
+	          					<h4 class=\"page-header\">Threshold Distance(R) = "+str(R)+", Participation Index(PI) = "+str(PI)+", Size of Colocation(K) = "+str(K)+"</h4>\n\
+	          					<div class=\"row placeholders\">\n\
+	            					<div class=\"col-sm-12\" id=\"map-canvas\" >\n\
+	              						<h4>Label</h4>\n\
+	              						<span class=\"text-muted\">Something else</span>\n\
+	            					</div>\n\
+	          					</div>\n\
+	          					<h2 class=\"sub-header\">Section title</h2>\n\
+	          						<div class=\"table-responsive\">\n\
+	            						<table class=\"table table-striped\">\n\
+	              							<thead>\n\
+	                							<tr>\n\
+	                  								<th>Colocation Between</th>\n\
+	                  								<th>Number of Instances</th>\n\
+	                  								<th>Participation Index</th>\n\
+									            </tr>\n\
+									        </thead>\n\
+									        <tbody>\n\
+									            <tr>\n\
+										            <td>A,B,C</td>\n\
+										            <td>1000</td>\n\
+										            <td>0.4</td>\n\
+									        	</tr>\n\
+									        </tbody>\n\
+									    </table>\n\
+									</div>\n\
+								</div>\n\
+							</div>\n\
+						</div>\n\
+					</div>\n\
+					<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n\
+				    <script src=\"bootstrap/js/bootstrap.min.js\"></script>\n\
+				  	</body>\n\
+					</html>\n"
 
-	def footer_default(self):
+	def body_default(self):
 		"""To add the footer"""
 		self.html+="google.maps.event.addDomListener(window, 'load', initialize);\n\
 			    </script>\n</head>\n\
