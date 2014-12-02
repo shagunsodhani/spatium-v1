@@ -15,5 +15,7 @@ Next task is to port Join Based Algo on Graph Database (Titan)
 We have use real world crime data of Chicago city, USA from [10] for our experiments. The data consists of crime incidents with details including location information. The idea is to predict which types of crime are likely to co-occur based on the past history of crime incidents at various locations in the city. 
 
 [Initial Survey Report] (https://sites.google.com/site/sanketmehtaiitr/spatium)
+
 [Demo] (http://shagunsodhani.in/spatium)
+
 [Presentation] (http://slides.com/shagun/spatium)
