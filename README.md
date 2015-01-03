@@ -13,4 +13,4 @@ Next task is to port the Join-Based Algorithm to a graph database. We plan on us
 
 We are using crime data for City of Chicago, USA. It can be accessed [here](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-present/ijzp-q8t2). 
 
-For more technical details, go through our [Initial Survey Report](https://sites.google.com/site/sanketmehtaiitr/spatium). Also go through our [demo](http://shagunsodhani.in/spatium) and [presentation](http://slides.com/shagun/spatium).
+For more technical details, go through our [Initial Survey Report](https://sites.google.com/site/sanketmehtaiitr/spatium). Also go through our [demo](http://shagunsodhani.in/spatium/demo.html) and [presentation](http://slides.com/shagun/spatium).
