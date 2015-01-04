@@ -1,5 +1,9 @@
 import sys
-import db
+
+try:
+    import database.mysql as db
+except ImportError as exc:
+    print("Error: failed to import settings module ({})".format(exc))
 
 
 def create_table(k, cursor):

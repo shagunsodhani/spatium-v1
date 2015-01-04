@@ -1,8 +1,19 @@
-from miner import Miner
-from graf import Graf
 import time
-from db import create_db
-from db import delete_db
+
+try:
+    from database.mysql import create_db, delete_db
+except ImportError as exc:
+    print("Error: failed to import settings module ({})".format(exc))
+
+try:
+    from app.miner import Miner
+except ImportError as exc:
+    print("Error: failed to import settings module ({})".format(exc))
+
+try:
+    from app.graf import Graf
+except ImportError as exc:
+    print("Error: failed to import settings module ({})".format(exc))
 
 schema = open('schema/spatium.sql','r')
 sql = schema.read()

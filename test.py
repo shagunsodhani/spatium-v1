@@ -1,6 +1,14 @@
-from miner import Miner
 import time
-from db import create_db
+
+try:
+    from database.mysql import create_db
+except ImportError as exc:
+    print("Error: failed to import settings module ({})".format(exc))
+
+try:
+    from app.miner import Miner
+except ImportError as exc:
+    print("Error: failed to import settings module ({})".format(exc))
 
 schema = open('schema/spatium.sql','r')
 sql = schema.read()
