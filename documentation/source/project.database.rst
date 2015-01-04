@@ -1,13 +1,13 @@
-spatium.database package
+project.database package
 ========================
 
 Submodules
 ----------
 
-spatium.database.mysql module
+project.database.mysql module
 -----------------------------
 
-.. automodule:: spatium.database.mysql
+.. automodule:: project.database.mysql
     :members:
     :undoc-members:
     :show-inheritance:
@@ -16,7 +16,7 @@ spatium.database.mysql module
 Module contents
 ---------------
 
-.. automodule:: spatium.database
+.. automodule:: project.database
     :members:
     :undoc-members:
     :show-inheritance:

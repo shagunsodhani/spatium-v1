@@ -10,7 +10,7 @@ try:
 except ImportError as exc:
     print("Error: failed to import settings module ({})".format(exc))
 
-schema = open('schema/spatium.sql','r')
+schema = open('../schema/spatium.sql','r')
 sql = schema.read()
 
 count = 1

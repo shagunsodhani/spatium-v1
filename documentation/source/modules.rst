@@ -1,7 +1,7 @@
-.
-=
+project
+=======
 
 .. toctree::
    :maxdepth: 4
 
-   spatium
+   project

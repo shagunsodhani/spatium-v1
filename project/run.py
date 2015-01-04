@@ -15,7 +15,7 @@ try:
 except ImportError as exc:
     print("Error: failed to import settings module ({})".format(exc))
 
-schema = open('schema/spatium.sql','r')
+schema = open('../schema/spatium.sql','r')
 sql = schema.read()
 r_values = [1000,10000]
 pi_values = [0.01, 0.5]

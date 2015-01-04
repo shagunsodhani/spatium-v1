@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Spatium documentation build configuration file, created by
-# sphinx-quickstart on Sun Jan  4 10:23:01 2015.
+# sphinx-quickstart on Sun Jan  4 12:44:51 2015.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -19,6 +19,7 @@ import os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../../')) 
 
 # -- General configuration ------------------------------------------------
 

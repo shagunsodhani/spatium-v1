@@ -1,21 +1,21 @@
-spatium.app package
+project.app package
 ===================
 
 Submodules
 ----------
 
-spatium.app.graf module
+project.app.graf module
 -----------------------
 
-.. automodule:: spatium.app.graf
+.. automodule:: project.app.graf
     :members:
     :undoc-members:
     :show-inheritance:
 
-spatium.app.miner module
+project.app.miner module
 ------------------------
 
-.. automodule:: spatium.app.miner
+.. automodule:: project.app.miner
     :members:
     :undoc-members:
     :show-inheritance:
@@ -24,7 +24,7 @@ spatium.app.miner module
 Module contents
 ---------------
 
-.. automodule:: spatium.app
+.. automodule:: project.app
     :members:
     :undoc-members:
     :show-inheritance:

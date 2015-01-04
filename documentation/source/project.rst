@@ -1,4 +1,4 @@
-spatium package
+project package
 ===============
 
 Subpackages
@@ -6,32 +6,32 @@ Subpackages
 
 .. toctree::
 
-    spatium.app
-    spatium.database
+    project.app
+    project.database
 
 Submodules
 ----------
 
-spatium.helper module
+project.helper module
 ---------------------
 
-.. automodule:: spatium.helper
+.. automodule:: project.helper
     :members:
     :undoc-members:
     :show-inheritance:
 
-spatium.run module
+project.run module
 ------------------
 
-.. automodule:: spatium.run
+.. automodule:: project.run
     :members:
     :undoc-members:
     :show-inheritance:
 
-spatium.test module
+project.test module
 -------------------
 
-.. automodule:: spatium.test
+.. automodule:: project.test
     :members:
     :undoc-members:
     :show-inheritance:
@@ -40,7 +40,7 @@ spatium.test module
 Module contents
 ---------------
 
-.. automodule:: spatium
+.. automodule:: project
     :members:
     :undoc-members:
     :show-inheritance:

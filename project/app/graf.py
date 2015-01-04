@@ -1,6 +1,7 @@
 import json
 from ConfigParser import ConfigParser
 import os
+import sys
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -17,7 +18,9 @@ except ImportError as exc:
 #---------------------------------------------------------Read Config-------------------------------------------------------------------------#
 
 config=ConfigParser()
-config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'config.cfg'))
+config_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../config', 'config.cfg')
+print config_path
+config.read(config_path)
 
 
 class Graf(object):
@@ -27,7 +30,7 @@ class Graf(object):
 
 		self.inFile = inFile
 		self.key = config.get(app_name, "map_key")
-		self.conn = db.connect(app_name, dbname)
+		self.conn = db.connect(app_name, dbname, config_path)
 		self.cursor = self.conn.cursor()
 		self.html = ''
 		self.lat = lat
