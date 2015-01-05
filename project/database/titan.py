@@ -28,5 +28,6 @@ def connect(app_name = "spatium_titan", config_path = os.path.join(os.path.abspa
     config.set_logger(DEBUG)
     g = Graph(config)
     return g
-    
-connect()
+
+if __name__ == '__main__':
+    connect()
