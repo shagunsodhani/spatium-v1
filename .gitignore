@@ -1,4 +1,4 @@
-config/config.cfg
+project/config/config.cfg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
