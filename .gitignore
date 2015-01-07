@@ -1,5 +1,6 @@
-project/config/config.cfg
-project/Data
+baseline/config/config.cfg
+baseline/Data
+Titan/bin
 
 #.gitignore for java
 *.class
