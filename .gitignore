@@ -1,6 +1,58 @@
+# Taken from http://stackoverflow.com/questions/8476376/typical-gitignore-file-for-an-android-app
+
+# files for the dex VM
+**/*.dex
+
+# Java class files
+**/*.class
+
+# generated files
+**/bin/
+**/gen/
+
+##Eclipse
+**/*.pydevproject
+**/*.project
+**/*.metadata
+**/bin/**
+**/tmp/**
+**/tmp/**
+**/*.tmp
+**/*.bak
+**/*.swp
+**/*~.nib
+**/local.properties
+**/.classpath
+**/.settings/
+**/.loadpath
+
+# Locally stored "Eclipse launch configurations"
+**/*.launch
+
+
 baseline/config/config.cfg
-baseline/Data
-Titan/bin
+**/Data/**
+**/lib/**
+Titan/config/config.properties
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# CDT-specific
+.cproject
+
+# PDT-specific
+.buildpath
+
+# sbteclipse plugin
+.target
+
+# TeXlipse plugin
+.texlipse
+
 
 #.gitignore for java
 *.class
