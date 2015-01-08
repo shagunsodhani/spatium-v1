@@ -14,7 +14,7 @@ public class Database {
 	
 	public Database()
 	{
-		System.out.println("Default Constructor for Database class called.");
+		System.out.println("Default Constructor for Database class called.\n");
 	}
 	
 	public TitanGraph connect(){
@@ -56,20 +56,6 @@ public class Database {
 		 * Method to close graph database connection
 		 */
 		graph.shutdown();
-		System.out.println("Connection Closed.");
-	}
-		
-	public static void main(String[] args){
-
-		
-//		Vertex juno = g.addVertex(null);
-//		juno.setProperty("name", "juno");
-//		Vertex jupiter = g.addVertex(null);
-//		jupiter.setProperty("name", "jupiter1");
-//		Edge married = g.addEdge(null, juno, jupiter, "married");
-//		for(Vertex vertex : g.getVertices()) {
-//			  System.out.println(vertex.getProperty("id")); 
-//			}
-		
-	}
+		System.out.println("Connection Closed.\n");
+	}	
 }
