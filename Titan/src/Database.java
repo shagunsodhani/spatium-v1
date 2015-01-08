@@ -3,13 +3,14 @@ import org.apache.commons.configuration.Configuration;
 
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
-
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 
 
@@ -51,29 +52,45 @@ public class Database {
 	
 	public static void clear_graph(TitanGraph g){
 		/**
-		 * Delete all the vertices from graph database
+		 * Delete all the vertices and edges from graph database.
+		 * This closes the connection to graph database as well.
 		 */
-		int count = 1;
-		for (Vertex vertex : g.getVertices()){
-			g.removeVertex(vertex);
-			count+=1;
-			if(count%1000==0){
-				System.out.println(count);
-			}
-		}
-		System.out.println("Deleted all vertices");
+		g.shutdown();
+		TitanCleanup.clear(g);
+		System.out.println("Deleted the graph");
 	}
 	
 	public static void main(String[] args){
+
 		TitanGraph g = connect();
 		clear_graph(g);
-		Vertex juno = g.addVertex(null);
-		juno.setProperty("name", "juno");
-		Vertex jupiter = g.addVertex(null);
-		jupiter.setProperty("name", "jupiter1");
-		Edge married = g.addEdge(null, juno, jupiter, "married");
-		for(Vertex vertex : g.getVertices()) {
-			  System.out.println(vertex.getProperty("id")); 
-			}
+		
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		System.out.println(dateFormat.format(date));
+		System.out.println("Starting insertion of vertices");
+		for(int i = 0; i < 1000000; i++){
+			g.addVertex(i);
+		}
+		System.out.println("Added all the vertices");
+		
+		date = new Date();
+		System.out.println(dateFormat.format(date));
+		
+		clear_graph(g);
+		
+		System.out.println("Deleted all the vertices");
+		date = new Date();
+		System.out.println(dateFormat.format(date));
+
+//		Vertex juno = g.addVertex(null);
+//		juno.setProperty("name", "juno");
+//		Vertex jupiter = g.addVertex(null);
+//		jupiter.setProperty("name", "jupiter1");
+//		Edge married = g.addEdge(null, juno, jupiter, "married");
+//		for(Vertex vertex : g.getVertices()) {
+//			  System.out.println(vertex.getProperty("id")); 
+//			}
+		
 	}
 }
