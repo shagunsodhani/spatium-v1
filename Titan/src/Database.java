@@ -42,9 +42,21 @@ public class Database {
 		}
 		
 		Configuration config = new BaseConfiguration();
+		/*
+		 * Adding properties related to backend storage to config
+		 * for eg: cassandra
+		 */
 		config.addProperty("storage.backend",prop.getProperty("storage.backend"));
 		config.addProperty("storage.hostname", prop.getProperty("storage.hostname"));
 		config.addProperty("storage.keyspace", prop.getProperty("storage.keyspace"));
+		
+		/*
+		 * Adding properties related to external indexing
+		 * for eg: elasticsearch  
+		 */
+		config.addProperty("index.search.backend", prop.getProperty("storage.index.search.backend"));
+		config.addProperty("index.search.hostname", prop.getProperty("storage.index.search.hostname"));
+		config.addProperty("index.search.client-only",prop.getProperty("storage.index.search.client-only"));
 		
 		TitanGraph g = TitanFactory.open(config);
 		System.out.println("Instantiated Titan Graph Instance");
