@@ -1,7 +1,9 @@
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.commons.el.EqualsOperator;
 import org.elasticsearch.search.aggregations.bucket.range.geodistance.GeoDistance;
@@ -11,6 +13,7 @@ import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
@@ -23,14 +26,10 @@ import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 
 /**
- * 
- */
-
-/**
- * @author sanket
+ * @author precise
  *
  */
-public class Graph {
+public class Graph {	
 	
 	@SuppressWarnings("unused")
 	public static void InitializeGraph(TitanGraph graph) throws Exception
@@ -54,8 +53,14 @@ public class Graph {
 		return clear_graph;
 	}
 	
+	public static void addEdges(TitanGraph graph, double distance){
+		
+		Map<String, Integer> typeMap = Socrata.statistics(graph);
+		
+	}
+	
 	@SuppressWarnings("unchecked")
-	public static void addEdges(TitanGraph graph, String property, String type, double distance) {
+	public static void addEdges(TitanGraph graph, String type, double distance) {
 		/*
 		 * Method to compute vertices in the nearby region as specified by 'distance' argument with respect to vertices of type 
 		 * specified by 'type' argument and add edges between them. 
@@ -63,7 +68,7 @@ public class Graph {
 		
 		int counter = 0;
 
-		for (Iterator<Vertex> iterator = graph.query().has(property,Compare.EQUAL, type).vertices().iterator(); iterator
+		for (Iterator<Vertex> iterator = graph.query().has("type",Compare.EQUAL, type).vertices().iterator(); iterator
 				.hasNext();) {
 			Vertex vertex = iterator.next();
 			
@@ -79,7 +84,7 @@ public class Graph {
 			// counter1 variable stores total no. of vertices satisfying Geo.WITHIN or its no. of edges
 			int counter1 = 0;
 			
-			for (Iterator <Vertex> iterator2 = graph.query().has(property,Compare.NOT_EQUAL, type).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
+			for (Iterator <Vertex> iterator2 = graph.query().has("type",Compare.NOT_EQUAL, type).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
 					iterator2.hasNext();) {
 				Vertex vertex2 = iterator2.next();
 //				System.out.println(counter+" : "+"Id = "+vertex2.getId()+" Place = "+vertex2.getProperty("place")+" Type = "+vertex2.getProperty("type"));
@@ -137,61 +142,56 @@ public class Graph {
 	
 	public static void removeEdges(TitanGraph graph){
 		/*
-		 * Removes all edges from a graph
+		 * Removes all edges of the form type1-type2 and type2-type1
 		 */
 		System.out.println("removeEdges function called.\n");
 		int counter = 0;
-		
-		for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
-			Edge edge = iterator.next();
-			edge.remove();
-			counter++;
-		}
+					
+			for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
+				Edge edge = iterator.next();
+				edge.remove();
+				counter++;
+			}		
 		System.out.println("Total no. of edges removed were = "+counter);		
 	}
+	
+	public static void removeEdges(TitanGraph graph, String type1, String type2) {
+		String labelString ="";
+		
+		if (type1 == null || type2 == null) {
+			labelString.concat(type1).concat(type2);
+		}
+	}
+	
 	/**
 	 * @param args
 	 * @throws Exception 
 	 */
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
+
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		
 		Database db = new Database();
 		TitanGraph graph = db.connect();
 		
 //		graph = clearGraph(db,graph);
 //		iterateVertices(graph);
-		
-		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		Date date = new Date();
+				
 		System.out.println(dateFormat.format(date));
-		
-		/*
-		TitanManagement mgmt = graph.getManagementSystem();
-        PropertyKey nameKey = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.buildIndex("name",Vertex.class).addKey(nameKey).buildMixedIndex("search");
-        mgmt.commit();
-		      
-		System.out.println("Starting insertion of vertices");
-		
-		for(int i = 0; i < 1000; i++){
-			Vertex vertex = graph.addVertex();
-			vertex.setProperty("name", ""+i);
-		}
-		System.out.println("Added all the vertices");
-		
-		date = new Date();
-		System.out.println(dateFormat.format(date));
-		*/
-		
+	
 //		InitializeGraph(graph);
 //		System.out.println("Graph initialized\n");
+		
+//		Map<String, Integer> typeMap = Socrata.statistics(graph);
+//		addEdges(graph,0.2);
 //		iterateVertices(graph);
 		
-//		addEdges(graph, "type","MOTOR VEHICLE THEFT",0.2);
-//		iterateEdges(graph);
-		
+		addEdges(graph, "STALKING",0.2);
+		iterateEdges(graph);
 		removeEdges(graph);
-		
+				
 		date = new Date();
 		System.out.println(dateFormat.format(date));
 		db.close(graph);
