@@ -67,6 +67,7 @@ public class Database {
 		/**
 		 * Method to close graph database connection
 		 */
+		graph.commit();
 		graph.shutdown();
 		System.out.println("Connection Closed.\n");
 	}	

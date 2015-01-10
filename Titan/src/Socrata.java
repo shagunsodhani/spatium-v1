@@ -2,6 +2,10 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -12,23 +16,36 @@ import javax.json.Json;
 import javax.json.JsonReader;
 import javax.json.JsonStructure;
 
+import org.elasticsearch.common.geo.GeoPoint;
+
+import com.sleepycat.je.utilint.Timestamp;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Vertex;
 
 
 public class Socrata {
 	
 	private final String USER_AGENT = "Mozilla/5.0";
-	private final int MAX_LIMIT = 20000;//50000
-	private final int MAX_OFFSET = 5707643;
+	private final int START = 0;
+	private final int MAX_LIMIT = 1000;//50000;
+	private final int MAX_OFFSET = 5000;//5707643;
 	
 	public Socrata(TitanGraph graph) throws Exception{
 		
+		System.out.println("Building Schema....\n");
+		build_schema(graph);
+		System.out.println("Schema built.\n");
+		
  		System.out.println("Testing 1 - Send Http GET request\n");
+ 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+ 		Date date = new Date();
  		
- 		int count = 0;
+ 		int count = START;
  		
- 		for (int i = 0; i < MAX_OFFSET; i += MAX_LIMIT) {
+ 		for (int i = START; i < MAX_OFFSET; i += MAX_LIMIT) {
  			long id = 0;
  			double latitude = 0, longitude = 0;
  			String type = null;
@@ -68,20 +85,32 @@ public class Socrata {
  		        }
  		        
  		        Vertex node = graph.addVertex(id);
- 		        //node.setProperty("id",id);
  		        node.setProperty("type", type);
- 		        node.setProperty("latitude", latitude);
- 		        node.setProperty("longitude", longitude);
+ 		        node.setProperty("place", Geoshape.point(latitude, longitude));
 // 		       System.out.println("Vertex added "+node.getId()+" with its data id "+id+" Total "+count+"\n");
-  			}
+
+ 			}
  			System.out.println("Total vertices added till now = "+count+"\n");
+ 			date = new Date();
+ 			System.out.println(dateFormat.format(date));
 		}
- 		
-          
-//		id: STRING 9338511
-//		longitude: STRING -87.665629386
-//		Key latitude: STRING 41.781663841
-//		Key primary_type: STRING ROBBERY
+		
+	}
+	
+	public static void build_schema(TitanGraph graph){
+		
+		TitanManagement mgmt = graph.getManagementSystem();
+		
+		PropertyKey typeKey = mgmt.makePropertyKey("type").dataType(String.class).make();
+		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
+		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Timestamp.class).make();
+		
+		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
+		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
+		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
+		
+		mgmt.commit();
+		
 	}
 	
 	public static void navigateTree(JsonValue tree, String key) {
