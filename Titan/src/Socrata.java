@@ -19,6 +19,7 @@ import javax.json.JsonStructure;
 import org.elasticsearch.common.geo.GeoPoint;
 
 import com.sleepycat.je.utilint.Timestamp;
+import com.spatial4j.core.shape.Point;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
@@ -84,9 +85,11 @@ public class Socrata {
  	        		}
  		        }
  		        
+ 		        Geoshape place = Geoshape.point(latitude, longitude);
+ 		        
  		        Vertex node = graph.addVertex(id);
  		        node.setProperty("type", type);
- 		        node.setProperty("place", Geoshape.point(latitude, longitude));
+ 		        node.setProperty("place", place);
 // 		       System.out.println("Vertex added "+node.getId()+" with its data id "+id+" Total "+count+"\n");
 
  			}

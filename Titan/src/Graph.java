@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Predicate;
 import com.tinkerpop.blueprints.Query.Compare;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -74,27 +75,39 @@ public class Graph {
 								vertex.getProperty("type")+" Latitude = "+latitude+ " Longitude = "+longitude+"\n");
 			
 			System.out.println("Vertices in "+distance+" km of locality are : ");
+			
+			// counter1 variable stores total no. of vertices satisfying Geo.WITHIN or its no. of edges
 			int counter1 = 0;
 			
 			for (Iterator <Vertex> iterator2 = graph.query().has(property,Compare.NOT_EQUAL, type).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
 					iterator2.hasNext();) {
 				Vertex vertex2 = iterator2.next();
-				System.out.println(counter+" : "+"Id = "+vertex2.getId()+" Place = "+vertex2.getProperty("place")+" Type = "+vertex2.getProperty("type"));
+//				System.out.println(counter+" : "+"Id = "+vertex2.getId()+" Place = "+vertex2.getProperty("place")+" Type = "+vertex2.getProperty("type"));
+				
+				//Get other point
+				Geoshape pointGeoshape2 = vertex2.getProperty("place");
+				
+				//Add edge between instances of two different types with label as type1-type2 eg:BATTERY-NARCOTICS
+				Edge edge = vertex.addEdge(type+"-"+vertex2.getProperty("type"), vertex2);
+				
+				//Set property for edge as distance between two vertices
+				edge.setProperty("distance",pointGeoshape.getPoint().distance(pointGeoshape2.getPoint()));
+				
 				counter1++;
 			}
-			System.out.println("Vertices in nearby locality are : "+counter1+"\n");
-			
-			counter++;			
+//			System.out.println("Vertices in nearby locality are : "+counter1+"\n");
+//			System.out.println("No. of edges added are = "+counter1);			
+			counter += counter1;			
 		}
-		System.out.println("Total Vertices = "+counter+"\n");
+		System.out.println("Total no. of edges added are = "+counter+"\n");
 	}
 		
 	public static void iterateVertices(TitanGraph graph){
 		/*
-		 * Iterates over all vertices of the graph and displays total no. of vertices.
+		 * Iterates over all vertices of a graph and displays total no. of vertices.
 		 */
 		
-		System.out.println("IterateVertices function called.\n");
+		System.out.println("iterateVertices function called.\n");
 		int counter = 0;
         	
 		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator
@@ -106,6 +119,36 @@ public class Graph {
 		System.out.println("Total Vertices = "+counter+"\n");
 	}
 	
+	public static void iterateEdges(TitanGraph graph) {
+		/*
+		 * Iterates over all edges of a graph and displays total no. of edges
+		 */
+		
+		System.out.println("iterateEdges function called.\n");
+		int counter = 0;
+		
+		for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
+			Edge edge = iterator.next();
+			System.out.println(counter+" : "+" Edge Label = "+edge.getLabel()+" Distance = "+edge.getProperty("distance"));
+			counter++;
+		}
+		System.out.println("Total no. of edges are = "+counter);		
+	}
+	
+	public static void removeEdges(TitanGraph graph){
+		/*
+		 * Removes all edges from a graph
+		 */
+		System.out.println("removeEdges function called.\n");
+		int counter = 0;
+		
+		for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
+			Edge edge = iterator.next();
+			edge.remove();
+			counter++;
+		}
+		System.out.println("Total no. of edges removed were = "+counter);		
+	}
 	/**
 	 * @param args
 	 * @throws Exception 
@@ -144,7 +187,10 @@ public class Graph {
 //		System.out.println("Graph initialized\n");
 //		iterateVertices(graph);
 		
-		addEdges(graph, "type","MOTOR VEHICLE THEFT",0.2);
+//		addEdges(graph, "type","MOTOR VEHICLE THEFT",0.2);
+//		iterateEdges(graph);
+		
+		removeEdges(graph);
 		
 		date = new Date();
 		System.out.println(dateFormat.format(date));
