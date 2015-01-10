@@ -6,6 +6,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -24,6 +27,7 @@ import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 
@@ -107,15 +111,49 @@ public class Socrata {
 		PropertyKey typeKey = mgmt.makePropertyKey("type").dataType(String.class).make();
 		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Timestamp.class).make();
-		
+		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
+						
 		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
 		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
 		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
+		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
 		
 		mgmt.commit();
 		
 	}
 	
+	@SuppressWarnings("rawtypes")
+	public static Map<String, Integer> statistics(TitanGraph graph){
+		/*
+		 * 1. Distribution of total instances across different crime types.
+		 */
+		
+		Map<String, Integer> typeMap = new HashMap<String, Integer>();
+		int counter_type = 0;
+		
+		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator
+				.hasNext();) {
+			Vertex vertex = iterator.next();
+			String value = vertex.getProperty("type");
+			if(!typeMap.containsKey(value)){
+				typeMap.put(value, 1);
+				counter_type++;
+			}else{
+				int temp = typeMap.get(value);
+				typeMap.put(value, ++temp);
+			}			
+		}
+		
+		System.out.println("Distribution of instances across "+counter_type+" different types : ");
+		
+		Iterator it = typeMap.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)it.next();
+	        System.out.println(pairs.getKey() + " = " + pairs.getValue());
+	    }
+		return typeMap;
+	}
+
 	public static void navigateTree(JsonValue tree, String key) {
 		   if (key != null)
 		      System.out.print("Key " + key + ": ");
@@ -149,6 +187,7 @@ public class Socrata {
 		}
 	
 	// HTTP GET request
+	
 	public JsonStructure send_get(int limit, int offset) throws Exception {
 		/**
 		 * For performance, SODA APIs are paged, and return a maximum of 50,000 records per page. 
