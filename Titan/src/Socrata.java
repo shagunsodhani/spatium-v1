@@ -32,7 +32,7 @@ public class Socrata {
 	
 	private final String USER_AGENT = "Mozilla/5.0";
 	private final int START = 0;
-	private final int MAX_LIMIT = 1000;//50000;
+	private final int MAX_LIMIT = 100;//50000;
 	private final int MAX_OFFSET = 10000;//5707643;
 	
 	public Socrata(TitanGraph graph) throws Exception{
@@ -53,6 +53,7 @@ public class Socrata {
 		 		
  			JsonStructure json = send_get(MAX_LIMIT,i);
  			
+ 			System.out.println("Received Json");
  			JsonArray array = (JsonArray) json;
  			long time_1 = System.currentTimeMillis();
  			
@@ -92,12 +93,13 @@ public class Socrata {
  		        Vertex node = graph.addVertex(id);
  		        node.setProperty("type", type);
  		        node.setProperty("place", place);
+ 		        node.setProperty("visible", true);
 // 		       System.out.println("Vertex added "+node.getId()+" with its data id "+id+" Total "+count+"\n");
 
  			}
  			long time_2 = System.currentTimeMillis();
  			time += time_2-time_1; 
-// 			System.out.println("Total vertices added till now = "+count+" in "+(time_2-time_1)+" ms.");
+ 			System.out.println("Total vertices added till now = "+count+" in "+(time_2-time_1)+" ms.");
 // 			date = new Date();
 // 			System.out.println(dateFormat.format(date));
 		}
@@ -113,11 +115,13 @@ public class Socrata {
 		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 //		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Timestamp.class).make();
 		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
+		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Boolean.class).make();
 						
 		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
 		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
 		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
+		mgmt.buildIndex("visible", Vertex.class).addKey(visibleKey).buildMixedIndex("search");
 		
 		mgmt.commit();
 		long time_2 = System.currentTimeMillis();
