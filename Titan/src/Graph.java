@@ -4,6 +4,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
+import org.apache.commons.collections.functors.ForClosure;
+
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexList;
 import com.thinkaurelius.titan.core.attribute.Geo;
@@ -61,7 +64,7 @@ public class Graph {
 		for (Iterator<Vertex> iterator = graph.query().has("type",Compare.EQUAL, type).vertices().iterator(); iterator
 				.hasNext();) {
 			Vertex vertex = iterator.next();
-			
+			vertex.setProperty("visible", false);
 			Geoshape pointGeoshape = vertex.getProperty("place");
 			double latitude = pointGeoshape.getPoint().getLatitude();
 			double longitude = pointGeoshape.getPoint().getLongitude();
@@ -74,20 +77,21 @@ public class Graph {
 			// counter1 variable stores total no. of vertices satisfying Geo.WITHIN or its no. of edges
 			int counter1 = 0;
 			
-			for (Iterator <Vertex> iterator2 = graph.query().has("type",Compare.NOT_EQUAL, type).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
+			for (Iterator <Vertex> iterator2 = graph.query().has("type",Compare.NOT_EQUAL, type).has("visible",Compare.EQUAL,true).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
 					iterator2.hasNext();) {
 				Vertex vertex2 = iterator2.next();
 //				System.out.println(counter+" : "+"Id = "+vertex2.getId()+" Place = "+vertex2.getProperty("place")+" Type = "+vertex2.getProperty("type"));
 				
 				//Get other point
 				Geoshape pointGeoshape2 = vertex2.getProperty("place");
+				String labelString = vertex2.getProperty("type")+"-"+type;
 				
-				//Add edge between instances of two different types with label as type1-type2 eg:BATTERY-NARCOTICS
+//				Add edge between instances of two different types with label as type1-type2 eg:BATTERY-NARCOTICS only if NARCOTICS-BATTERY edge is not present
+//			    vertex.query().has("id", vertex2.getId()).direction(Direction.BOTH).has(labelString, vertex2).vertices();
 				Edge edge = vertex.addEdge(type+"-"+vertex2.getProperty("type"), vertex2);
-				
-				//Set property for edge as distance between two vertices
+					
+//				Set property for edge as distance between two vertices
 				edge.setProperty("distance",pointGeoshape.getPoint().distance(pointGeoshape2.getPoint()));
-				
 				counter1++;
 			}
 //			System.out.println("Vertices in nearby locality are : "+counter1+"\n");
@@ -95,7 +99,7 @@ public class Graph {
 			counter += counter1;			
 		}
 		double time_2 = System.currentTimeMillis();
-		System.out.println("Total no. of edges added are = "+counter+" in "+(time_2-time_1));
+		System.out.println("Total no. of edges added for type = "+type+" are = "+counter+" in "+(time_2-time_1)+ "ms.\n");
 	}
 		
 	public static void iterateVertices(TitanGraph graph){
@@ -140,6 +144,8 @@ public class Graph {
 					
 			for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
 				Edge edge = iterator.next();
+				edge.getVertex(Direction.IN).setProperty("visible", true);
+				edge.getVertex(Direction.OUT).setProperty("visible", true);
 				edge.remove();
 				counter++;
 			}		
@@ -153,26 +159,34 @@ public class Graph {
 			labelString.concat(type1).concat(type2);
 		}
 	}
-	
-	public static void exp1(Database db, TitanGraph graph) throws Exception{
 		
-//		graph = Graph.clearGraph(db, graph);
-//		Graph.InitializeGraph(graph);
+	public static TitanGraph exp1(Database db, TitanGraph graph) throws Exception{
+		/*
+		 * Need to return Titangraph instance because clearGraph functions clears the graph and returns new instance
+		 * on which further processing needs to be done.
+		 */
+		
+		graph = Graph.clearGraph(db, graph);
+		Graph.InitializeGraph(graph);
 		Map<String, Integer> typeMap = Socrata.statistics(graph);
-		Graph.removeEdges(graph);
+//		Graph.removeEdges(graph);
+		
 		Graph.addEdges(graph, "THEFT",0.2);
-		Graph.exploreNeighboursGeo(graph, "THEFT", 0.2);
-		Graph.exploreNeighboursEdge(graph, "THEFT", 0.2);
+		Graph.addEdges(graph, "NARCOTICS", 0.2);
+		
+//		Graph.exploreNeighboursGeo(graph, "THEFT", 0.2);
+//		Graph.exploreNeighboursEdge(graph, "THEFT", 0.2);
 //		Graph.removeEdges(graph);
 //		Graph.clearGraph(db, graph);
-		db.close(graph);
+//		db.close(graph);
+		return graph;
 	}
 	
 	public static void exploreNeighboursGeo(TitanGraph graph, String type, double distance) {
 		
 		System.out.println("Exploring neighbours using Geoshape and Geo.WITHIN i.e, using elasticsearch");
 		int counter = 0;
-		double time = 0;
+//		double time = 0;
 		double time_1 = System.currentTimeMillis();
 		
 		for (Iterator<Vertex> iterator = graph.query().has("type",Compare.EQUAL, type).vertices().iterator(); iterator
@@ -210,14 +224,23 @@ public class Graph {
 //			double time_3 = System.currentTimeMillis();
 		    Vertex vertex = iterator.next();
 		    Iterator<Vertex> iterator2 = vertex.query().vertices().iterator();
-//		    First Method
+		    /*
+		     * First Method - Returns a list of vertices connected to a vertex under consideration irrespective of its distance
+		     * from that vertex. 
+		     */
+
 		    /*
 		    for(Iterator<Vertex> iterator2 = vertex.query().vertices().iterator();iterator2.hasNext();){
 		    	Vertex vertex2 = iterator2.next();
 		    	System.out.println("Vertex : "+vertex.getId()+" Vertex_In : "+vertex2.getId());
 		    }
 		    */
-//		    Second Method
+		    
+		    /*
+		     * Second Method - Returns a list of edges(both - OUT and IN) which can be used to filter neighbouring vertices
+		     * based on distance threshold. Filtering need to be implemented. 
+		     */
+//		     
 		    /*
 		    for (Iterator<Edge> iterator2 = vertex.query().edges().iterator();iterator2.hasNext();) {
 				Edge edge = iterator2.next();
@@ -250,7 +273,7 @@ public class Graph {
 		TitanGraph graph = db.connect();
 		System.out.println(dateFormat.format(date));
 		
-		exp1(db, graph);
+		graph = exp1(db, graph);
 		
 //		graph = clearGraph(db,graph);
 //		iterateVertices(graph);
@@ -268,7 +291,7 @@ public class Graph {
 				
 		date = new Date();
 		System.out.println(dateFormat.format(date));
-//		db.close(graph);
+		db.close(graph);
 		
 	}
 
