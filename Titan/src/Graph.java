@@ -55,7 +55,7 @@ public class Graph {
 		Iterator it = typeMap.entrySet().iterator();
 	    while (it.hasNext()) {
 	        Map.Entry pairs = (Map.Entry)it.next();
-	        System.out.println("Adding edges for type = " + pairs.getKey());
+	        System.out.println(counter+" : Adding edges for type = " + pairs.getKey());
 	        time += Graph.addEdges(graph, (String) pairs.getKey(), distance);
 	        counter++;
 	    }
@@ -156,16 +156,17 @@ public class Graph {
 					
 			for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
 				Edge edge = iterator.next();
-//				edge.getVertex(Direction.IN).setProperty("visible", 1);
-//				edge.getVertex(Direction.OUT).setProperty("visible", 1);
+				edge.getVertex(Direction.IN).setProperty("visible", 1);
+				edge.getVertex(Direction.OUT).setProperty("visible", 1);
 				edge.remove();
 				counter++;
 			}
-			
+			/*
 			for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator.hasNext();) {
 				Vertex vertex = iterator.next();
 				vertex.setProperty("visible", 1);
 			}
+			*/
 				
 		System.out.println("Total no. of edges removed were = "+counter);		
 	}
@@ -178,31 +179,36 @@ public class Graph {
 		}
 	}
 		
-	public static TitanGraph exp1(Database db, TitanGraph graph) throws Exception{
+	public static TitanGraph exp1(Database db, TitanGraph graph, double distance) throws Exception{
 		/*
 		 * Need to return Titangraph instance because clearGraph functions clears the graph and returns new instance
 		 * on which further processing needs to be done.
 		 */
-		
 		graph = Graph.clearGraph(db, graph);
 		Graph.InitializeGraph(graph);
-		Map<String, Integer> typeMap = Socrata.statistics(graph);
+//		Map<String, Integer> typeMap = Socrata.statistics(graph);
+//		Graph.iterateEdges(graph);
 //		Graph.removeEdges(graph);
-		Graph.iterateVertices(graph);
 		
-//		Graph.addEdges(graph, 0.2);
-//		Graph.addEdges(graph, "THEFT",0.2);
-//		Graph.addEdges(graph, "NARCOTICS", 0.2);
-		
-//		Graph.exploreNeighboursGeo(graph, "THEFT", 0.2);
-//		Graph.exploreNeighboursEdge(graph, "THEFT", 0.2);
-//		Graph.removeEdges(graph);
-//		Graph.clearGraph(db, graph);
-//		db.close(graph);
-		return graph;
+//		Graph.addEdges(graph, distance);
+		/*
+		double timeGeo = 0,timeEdge = 0;
+		int counter = 0;
+		Iterator it = typeMap.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)it.next();
+	        System.out.println(counter+" : Exploring Neighbours for type = " + pairs.getKey());
+	        timeGeo += Graph.exploreNeighboursGeo(graph, (String) pairs.getKey(), distance);
+	        timeEdge += Graph.exploreNeighboursEdge(graph, (String) pairs.getKey(), distance);
+	        counter++;
+	    }
+	    System.out.println(counter+" : Total time required for exploring neighbours by Geo.WITHIN = "+timeGeo+" : Avg. Time = "+(timeGeo/counter));
+	    System.out.println(counter+" : Total time required for exploring neighbours by Edge traversal ="+timeEdge+" : Avg. Time = "+(timeEdge/counter));
+		*/
+	    return graph;
 	}
 	
-	public static void exploreNeighboursGeo(TitanGraph graph, String type, double distance) {
+	public static double exploreNeighboursGeo(TitanGraph graph, String type, double distance) {
 		
 		System.out.println("Exploring neighbours using Geoshape and Geo.WITHIN i.e, using elasticsearch");
 		int counter = 0;
@@ -230,10 +236,11 @@ public class Graph {
 		
 		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
 //		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+		return (time_2-time_1);
 		
 	}
 	
-	public static void exploreNeighboursEdge(TitanGraph graph, String type, double distance) {
+	public static double exploreNeighboursEdge(TitanGraph graph, String type, double distance) {
 		
 		System.out.println("Exploring neighbours using Edge Traversal");
 		double time = 0;
@@ -277,6 +284,7 @@ public class Graph {
 		double time_2 = System.currentTimeMillis();
 		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
 //		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+		return (time_2-time_1);
 	}
 	
 	/**
@@ -293,7 +301,7 @@ public class Graph {
 		TitanGraph graph = db.connect();
 		System.out.println(dateFormat.format(date));
 		
-		graph = exp1(db, graph);
+		graph = exp1(db, graph,0.2);
 		
 //		graph = clearGraph(db,graph);
 //		iterateVertices(graph);

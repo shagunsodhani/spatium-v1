@@ -93,7 +93,7 @@ public class Socrata {
  		        Vertex node = graph.addVertex(id);
  		        node.setProperty("type", type);
  		        node.setProperty("place", place);
- 		        node.setProperty("visible", true);
+ 		        node.setProperty("visible", 1);
 // 		       System.out.println("Vertex added "+node.getId()+" with its data id "+id+" Total "+count+"\n");
 
  			}
@@ -115,7 +115,7 @@ public class Socrata {
 		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 //		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Timestamp.class).make();
 		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
-		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Boolean.class).make();
+		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
 						
 		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
 		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
