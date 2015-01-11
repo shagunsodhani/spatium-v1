@@ -1,34 +1,24 @@
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.commons.el.EqualsOperator;
-import org.elasticsearch.search.aggregations.bucket.range.geodistance.GeoDistance;
-
-import com.spatial4j.core.shape.impl.GeoCircle;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.Titan;
-import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.VertexList;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Predicate;
 import com.tinkerpop.blueprints.Query.Compare;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 
 /**
  * @author precise
  *
  */
+@SuppressWarnings("deprecation")
 public class Graph {	
 	
 	@SuppressWarnings("unused")
@@ -67,7 +57,7 @@ public class Graph {
 		 */
 		
 		int counter = 0;
-
+		double time_1 = System.currentTimeMillis();
 		for (Iterator<Vertex> iterator = graph.query().has("type",Compare.EQUAL, type).vertices().iterator(); iterator
 				.hasNext();) {
 			Vertex vertex = iterator.next();
@@ -75,12 +65,12 @@ public class Graph {
 			Geoshape pointGeoshape = vertex.getProperty("place");
 			double latitude = pointGeoshape.getPoint().getLatitude();
 			double longitude = pointGeoshape.getPoint().getLongitude();
-			
+			/*
 			System.out.println(counter+" : "+"Id = "+vertex.getId()+" Place = "+vertex.getProperty("place")+" Type = "+
 								vertex.getProperty("type")+" Latitude = "+latitude+ " Longitude = "+longitude+"\n");
 			
 			System.out.println("Vertices in "+distance+" km of locality are : ");
-			
+			*/
 			// counter1 variable stores total no. of vertices satisfying Geo.WITHIN or its no. of edges
 			int counter1 = 0;
 			
@@ -104,7 +94,8 @@ public class Graph {
 //			System.out.println("No. of edges added are = "+counter1);			
 			counter += counter1;			
 		}
-		System.out.println("Total no. of edges added are = "+counter+"\n");
+		double time_2 = System.currentTimeMillis();
+		System.out.println("Total no. of edges added are = "+counter+" in "+(time_2-time_1));
 	}
 		
 	public static void iterateVertices(TitanGraph graph){
@@ -163,6 +154,88 @@ public class Graph {
 		}
 	}
 	
+	public static void exp1(Database db, TitanGraph graph) throws Exception{
+		
+//		graph = Graph.clearGraph(db, graph);
+//		Graph.InitializeGraph(graph);
+		Map<String, Integer> typeMap = Socrata.statistics(graph);
+		Graph.removeEdges(graph);
+		Graph.addEdges(graph, "THEFT",0.2);
+		Graph.exploreNeighboursGeo(graph, "THEFT", 0.2);
+		Graph.exploreNeighboursEdge(graph, "THEFT", 0.2);
+//		Graph.removeEdges(graph);
+//		Graph.clearGraph(db, graph);
+		db.close(graph);
+	}
+	
+	public static void exploreNeighboursGeo(TitanGraph graph, String type, double distance) {
+		
+		System.out.println("Exploring neighbours using Geoshape and Geo.WITHIN i.e, using elasticsearch");
+		int counter = 0;
+		double time = 0;
+		double time_1 = System.currentTimeMillis();
+		
+		for (Iterator<Vertex> iterator = graph.query().has("type",Compare.EQUAL, type).vertices().iterator(); iterator
+				.hasNext();) {
+//			double time_3 = System.currentTimeMillis();
+			Vertex vertex = iterator.next();
+			
+			Geoshape pointGeoshape = vertex.getProperty("place");
+			double latitude = pointGeoshape.getPoint().getLatitude();
+			double longitude = pointGeoshape.getPoint().getLongitude();
+			
+			Iterator<Vertex>iterator2  = graph.query().has("type",Compare.NOT_EQUAL, type).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
+			
+//			double time_4 = System.currentTimeMillis();
+			
+//			System.out.println("time required for "+vertex.getId()+" = "+(time_4-time_3));
+//			time += time_4-time_3;
+			counter++;
+		}
+		double time_2 = System.currentTimeMillis();
+		
+		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
+//		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+		
+	}
+	
+	public static void exploreNeighboursEdge(TitanGraph graph, String type, double distance) {
+		
+		System.out.println("Exploring neighbours using Edge Traversal");
+		double time = 0;
+		double time_1 = System.currentTimeMillis();
+		int counter = 0;
+		
+		for (Iterator<Vertex> iterator = graph.query().has("type", Compare.EQUAL, type).vertices().iterator();iterator.hasNext();) {
+//			double time_3 = System.currentTimeMillis();
+		    Vertex vertex = iterator.next();
+		    Iterator<Vertex> iterator2 = vertex.query().vertices().iterator();
+//		    First Method
+		    /*
+		    for(Iterator<Vertex> iterator2 = vertex.query().vertices().iterator();iterator2.hasNext();){
+		    	Vertex vertex2 = iterator2.next();
+		    	System.out.println("Vertex : "+vertex.getId()+" Vertex_In : "+vertex2.getId());
+		    }
+		    */
+//		    Second Method
+		    /*
+		    for (Iterator<Edge> iterator2 = vertex.query().edges().iterator();iterator2.hasNext();) {
+				Edge edge = iterator2.next();
+				Vertex vertex2 = edge.getVertex(Direction.IN);
+				System.out.println("Vertex : "+vertex.getId()+" Vertex_In : "+vertex2.getId());
+			}
+			*/
+//		    double time_4 = System.currentTimeMillis();
+//		    System.out.println("time required for "+vertex.getId()+" = "+(time_4-time_3));
+//			time += time_4-time_3;
+			counter++;
+		    
+		}
+		double time_2 = System.currentTimeMillis();
+		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
+//		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+	}
+	
 	/**
 	 * @param args
 	 * @throws Exception 
@@ -175,12 +248,13 @@ public class Graph {
 		
 		Database db = new Database();
 		TitanGraph graph = db.connect();
+		System.out.println(dateFormat.format(date));
+		
+		exp1(db, graph);
 		
 //		graph = clearGraph(db,graph);
 //		iterateVertices(graph);
-				
-		System.out.println(dateFormat.format(date));
-	
+			
 //		InitializeGraph(graph);
 //		System.out.println("Graph initialized\n");
 		
@@ -188,13 +262,13 @@ public class Graph {
 //		addEdges(graph,0.2);
 //		iterateVertices(graph);
 		
-		addEdges(graph, "STALKING",0.2);
-		iterateEdges(graph);
-		removeEdges(graph);
+//		addEdges(graph, "STALKING",0.2);
+//		iterateEdges(graph);
+//		removeEdges(graph);
 				
 		date = new Date();
 		System.out.println(dateFormat.format(date));
-		db.close(graph);
+//		db.close(graph);
 		
 	}
 
