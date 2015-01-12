@@ -21,7 +21,7 @@ except ImportError as exc:
 
 
 def date_to_timestamp(stime):
-	print stime
+	# print stime
 	stime = stime.split('T')
 	date = stime[0]
 	temp = date.split("-")
@@ -34,44 +34,56 @@ def date_to_timestamp(stime):
 		a.append(int(i))
 	a = datetime.datetime(a[0], a[1], a[2], a[3], a[4], a[5]).timetuple()
 	# year, month, day, hour, minute, second, microsecond, and tzinfo.
-
-
 	return int(time.mktime(a))
 
 
 class socrata(object):
 	"""Class to fetch data using socrata API"""
-	def __init__(self, app_name = "spatium"):
+	def __init__(self, app_name = "spatium", limit = 10000):
 		
 		self.conn = db.connect(app_name)
 		self.cursor = self.conn.cursor()
 		self.url = "https://data.cityofchicago.org/resource/ijzp-q8t2.json"
+		self.limit = limit
 	
-	def fetch_json(self, limit=0, offset=0):
-		payload = {'$limit': limit, '$offset': offset}
+	def fetch_json(self, offset=0):
+		payload = {'$limit': self.limit, '$offset': offset}
 		r = requests.get(self.url, params=payload)
 		to_save = ['latitude', 'longitude', 'id', 'primary_type','date']
-		# print r.url
-		sql = "INSERT INTO dataset ("
-		for i in to_save:
-			sql+=i+" , "
-		sql=sql[:-2]
-		sql+= ") VALUES "
-		to_save = ['latitude', 'longitude', 'id', 'primary_type','date']
-		for i in r.json():
-			to_insert = "( "
-			for j in to_save:
-				if j == 'date':
-					i[j] = str(date_to_timestamp(i[j]))
-				i[j] = "\'"+i[j]+"\'"	
-				to_insert+=i[j]+", "
-			to_insert = to_insert[:-2]
-			to_insert+='), '
-			sql+=to_insert
-		sql = sql[:-2]
-		db.write(sql, self.cursor, self.conn)
+		if r.json():
+			# print r.json()
+			sql = "INSERT INTO dataset ("
+			for i in to_save:
+				sql+=i+" , "
+			sql=sql[:-2]
+			sql+= ") VALUES "
+			to_save = ['latitude', 'longitude', 'id', 'primary_type','date']
+			for i in r.json():
+				to_insert = "( "
+				for j in to_save:
+					if j not in i.keys():
+						i[j] = ''
+					else:
+						if j == 'date':
+							i[j] = str(date_to_timestamp(i[j]))
+						i[j] = "\'"+i[j]+"\'"	
+					to_insert+=i[j]+", "
+				to_insert = to_insert[:-2]
+				to_insert+='), '
+				sql+=to_insert
+			sql = sql[:-2]
+			db.write(sql, self.cursor, self.conn)
+			return 1
+		else:
+			return 0
+
+	def fetch_all(self):
+		offset = 0
+		while(self.fetch_json(offset = offset)):
+			offset+=self.limit
+			print offset, " elements inserted in db."
 
 
-a = socrata()
-a.fetch_json(2,0) 
+a = socrata(limit = 10000)
+a.fetch_all() 
 
