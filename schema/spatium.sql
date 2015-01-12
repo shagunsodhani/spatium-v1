@@ -75,8 +75,8 @@ CREATE TABLE IF NOT EXISTS `location` (
 
 CREATE TABLE IF NOT EXISTS `dataset` (
   `id` int(11) NOT NULL,
-  `longitude` double(20,12) NOT NULL,
-  `latitude` double(20,12) NOT NULL,
+  `longitude` double(25,15) NOT NULL,
+  `latitude` double(25,15) NOT NULL,
   `primary_type` varchar(100) NOT NULL,
   `date` int(11) NOT NULL,
   PRIMARY KEY (`id`)
