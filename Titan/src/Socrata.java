@@ -31,15 +31,15 @@ import com.tinkerpop.blueprints.Vertex;
 public class Socrata {
 	
 	private final String USER_AGENT = "Mozilla/5.0";
-	private final int START = 0;
-	private final int MAX_LIMIT = 100;//50000;
-	private final int MAX_OFFSET = 10000;//5707643;
+	private final int START = 10000;
+	private final int MAX_LIMIT = 500;//50000;
+	private final int MAX_OFFSET = 50000;//5707643;
 	
 	public Socrata(TitanGraph graph) throws Exception{
-		
+		/*
 		System.out.println("Building Schema....\n");
 		build_schema(graph);
-		
+		*/
  		System.out.println("Testing 1 - Send Http GET request\n");
  		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
  		Date date = new Date();
@@ -130,37 +130,6 @@ public class Socrata {
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public static Map<String, Integer> statistics(TitanGraph graph){
-		/*
-		 * 1. Distribution of total instances across different crime types.
-		 */
-		
-		Map<String, Integer> typeMap = new HashMap<String, Integer>();
-		int counter_type = 0;
-		
-		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator
-				.hasNext();) {
-			Vertex vertex = iterator.next();
-			String value = vertex.getProperty("type");
-			if(!typeMap.containsKey(value)){
-				typeMap.put(value, 1);
-				counter_type++;
-			}else{
-				int temp = typeMap.get(value);
-				typeMap.put(value, ++temp);
-			}			
-		}
-		
-		System.out.println("Distribution of instances across "+counter_type+" different types : ");
-		
-		Iterator it = typeMap.entrySet().iterator();
-	    while (it.hasNext()) {
-	        Map.Entry pairs = (Map.Entry)it.next();
-	        System.out.println(pairs.getKey() + " = " + pairs.getValue());
-	    }
-		return typeMap;
-	}
-
 	public static void navigateTree(JsonValue tree, String key) {
 		   if (key != null)
 		      System.out.print("Key " + key + ": ");
