@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import datetime
+from ConfigParser import ConfigParser
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -36,20 +37,23 @@ def date_to_timestamp(stime):
 	# year, month, day, hour, minute, second, microsecond, and tzinfo.
 	return int(time.mktime(a))
 
-
 class socrata(object):
 	"""Class to fetch data using socrata API"""
-	def __init__(self, app_name = "spatium", limit = 10000):
+	def __init__(self, app_name = "spatium", limit = 10000, config_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../config', 'config.cfg')):
 		
 		self.conn = db.connect(app_name)
 		self.cursor = self.conn.cursor()
 		self.url = "https://data.cityofchicago.org/resource/ijzp-q8t2.json"
 		self.limit = limit
+		config=ConfigParser()
+		config.read(config_path)
+		self.socrata_key = config.get(app_name, "socrata_key")
 	
 	def fetch_json(self, offset=0):
-		payload = {'$limit': self.limit, '$offset': offset}
+		payload = {'$limit': self.limit, '$offset': offset, '$$app_token':self.socrata_key}
 		r = requests.get(self.url, params=payload)
 		to_save = ['latitude', 'longitude', 'id', 'primary_type','date']
+		print r.url
 		if r.json():
 			# print r.json()
 			sql = "INSERT INTO dataset ("
@@ -84,6 +88,6 @@ class socrata(object):
 			print offset, " elements inserted in db."
 
 
-a = socrata(limit = 10000)
+a = socrata(limit = 50000)
 a.fetch_all() 
 
