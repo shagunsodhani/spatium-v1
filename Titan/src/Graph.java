@@ -494,7 +494,7 @@ public class Graph {
 		
 		// Step 1 : Clear initial graph
 		graph = clearGraph(db,graph);
-		/*
+		
 		// Step 2 : Build Schema
 		build_schema(graph);
 		
@@ -510,7 +510,7 @@ public class Graph {
 		
 		date = new Date();
 		System.out.println(dateFormat.format(date));
-		*/
+		
 		// Step 6 : Close Graph Database Connection
 		db.close(graph);
 		
