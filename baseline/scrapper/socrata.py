@@ -51,7 +51,12 @@ class socrata(object):
 	
 	def fetch_json(self, offset=0):
 		payload = {'$limit': self.limit, '$offset': offset, '$$app_token':self.socrata_key}
-		r = requests.get(self.url, params=payload)
+		
+		try :
+			r = requests.get(self.url, params=payload)
+		except requests.exceptions.ChunkedEncodingError:
+			print payload
+			fetch_json(offset = offset)
 		to_save = ['latitude', 'longitude', 'id', 'primary_type','date']
 		print r.url
 		if r.json():
@@ -66,7 +71,7 @@ class socrata(object):
 				to_insert = "( "
 				for j in to_save:
 					if j not in i.keys():
-						i[j] = ''
+						i[j] = "\'\'"
 					else:
 						if j == 'date':
 							i[j] = str(date_to_timestamp(i[j]))
@@ -88,6 +93,6 @@ class socrata(object):
 			print offset, " elements inserted in db."
 
 
-a = socrata(limit = 50000)
+a = socrata(limit = 10000)
 a.fetch_all() 
 
