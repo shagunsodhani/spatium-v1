@@ -56,7 +56,8 @@ class socrata(object):
 			r = requests.get(self.url, params=payload)
 		except requests.exceptions.ChunkedEncodingError:
 			print payload
-			fetch_json(offset = offset)
+			return self.fetch_json(offset = offset)
+
 		to_save = ['latitude', 'longitude', 'id', 'primary_type','date']
 		print r.url
 		if r.json():
@@ -87,7 +88,7 @@ class socrata(object):
 			return 0
 
 	def fetch_all(self):
-		offset = 0
+		offset = 580000
 		while(self.fetch_json(offset = offset)):
 			offset+=self.limit
 			print offset, " elements inserted in db."
