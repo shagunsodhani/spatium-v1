@@ -7,6 +7,7 @@ db =
 charset = utf8
 use_unicode = True
 map_key = 
+socrata_key = 
 
 #titan
 [app-name]
