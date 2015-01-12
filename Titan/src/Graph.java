@@ -49,17 +49,42 @@ public class Graph {
 	
 	public static void addEdges(TitanGraph graph, double distance){
 		
-		double time = 0;
-		int counter = 0;
-		Map<String, Integer> typeMap = Socrata.statistics(graph);
-		Iterator it = typeMap.entrySet().iterator();
-	    while (it.hasNext()) {
-	        Map.Entry pairs = (Map.Entry)it.next();
-	        System.out.println(counter+" : Adding edges for type = " + pairs.getKey());
-	        time += Graph.addEdges(graph, (String) pairs.getKey(), distance);
-	        counter++;
-	    }
-	    System.out.println(counter+" : Total time required for insertion of edges = "+time+" : Avg. Time = "+(time/counter));
+		double time =0,time_1,time_2 ;
+		int count_edges= 0 ;
+		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator.hasNext();) {
+			
+			Vertex vertex = iterator.next();
+			vertex.setProperty("visible", 0);
+			Geoshape pointGeoshape = vertex.getProperty("place");
+			double latitude = pointGeoshape.getPoint().getLatitude();
+			double longitude = pointGeoshape.getPoint().getLongitude();
+			String type = vertex.getProperty("type");
+			
+			time_1 = System.currentTimeMillis();
+			
+			for (Iterator <Vertex> iterator2 = graph.query().has("type",Compare.NOT_EQUAL, type).has("visible",Compare.EQUAL,1).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
+					iterator2.hasNext();) {
+				Vertex vertex2 = iterator2.next();
+//				System.out.println(counter+" : "+"Id = "+vertex2.getId()+" Place = "+vertex2.getProperty("place")+" Type = "+vertex2.getProperty("type"));
+				
+				//Get other point
+				Geoshape pointGeoshape2 = vertex2.getProperty("place");
+				String labelString = vertex2.getProperty("type")+"-"+type;
+				
+//				Add edge between instances of two different types with label as type1-type2 eg:BATTERY-NARCOTICS only if NARCOTICS-BATTERY edge is not present
+//			    vertex.query().has("id", vertex2.getId()).direction(Direction.BOTH).has(labelString, vertex2).vertices();
+				Edge edge = vertex.addEdge(type+"-"+vertex2.getProperty("type"), vertex2);
+					
+//				Set property for edge as distance between two vertices
+				edge.setProperty("distance",pointGeoshape.getPoint().distance(pointGeoshape2.getPoint()));
+				count_edges++;
+			}
+			
+			time_2 = System.currentTimeMillis();
+			time += (time_2-time_1);
+		}
+		
+	    System.out.println(" Total time required for insertion of "+count_edges+" edges = "+time+" : Avg. Time = "+(time/count_edges));
 		
 	}
 	
@@ -125,7 +150,7 @@ public class Graph {
 		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator
 				.hasNext();) {
 			Vertex vertex = iterator.next();
-			System.out.println(counter+" : "+"Id = "+vertex.getId()+" Place = "+vertex.getProperty("place")+" Type = "+vertex.getProperty("type")+" Visible = "+vertex.getProperty("visible"));
+//			System.out.println(counter+" : "+"Id = "+vertex.getId()+" Place = "+vertex.getProperty("place")+" Type = "+vertex.getProperty("type")+" Visible = "+vertex.getProperty("visible"));
 			counter++;
 		}
 		System.out.println("Total Vertices = "+counter+"\n");
@@ -147,6 +172,21 @@ public class Graph {
 		System.out.println("Total no. of edges are = "+counter);		
 	}
 	
+	public static void removeVertices(TitanGraph graph, String type) {
+		/*
+		 * Removes vertices of a particular type and also edges incident on it.
+		 */
+		for (Iterator<Vertex> iterator = graph.query().has("type", Compare.EQUAL, type).vertices().iterator();iterator.hasNext();) {
+			Vertex vertex = iterator.next();
+			for (Iterator<Edge> iterator2 = vertex.query().edges().iterator();iterator2.hasNext();){
+				Edge edge = iterator2.next();
+				edge.remove();
+			}
+			vertex.remove();
+		}
+		System.out.println("Vertices of type = "+type+" removed.");
+	}
+
 	public static void removeEdges(TitanGraph graph){
 		/*
 		 * Removes all edges of the form type1-type2 and type2-type1
@@ -188,11 +228,16 @@ public class Graph {
 //		Graph.InitializeGraph(graph);
 		
 		
-		Map<String, Integer> typeMap = Socrata.statistics(graph);
-//		Graph.iterateEdges(graph);
-		Graph.removeEdges(graph);
+//		Map<String, Integer> typeMap = Socrata.statistics(graph);
+//		Graph.iterateVertices(graph);
+//		Graph.removeVertices(graph, "PUBLIC INDECENCY");
+//		Graph.removeVertices(graph, "NON - CRIMINAL");
 		
-//		Graph.addEdges(graph, distance);
+//		Graph.iterateVertices(graph);
+//		Graph.iterateEdges(graph);
+//		Graph.removeEdges(graph);
+		
+		Graph.addEdges(graph, distance);
 		/*
 		double timeGeo = 0,timeEdge = 0;
 		int counter = 0;
@@ -302,8 +347,8 @@ public class Graph {
 		Database db = new Database();
 		TitanGraph graph = db.connect();
 		System.out.println(dateFormat.format(date));
-		
-		graph = exp1(db, graph,1.0);
+		MySql mySql = new MySql(graph);
+//		graph = exp1(db, graph,0.4);
 		
 //		graph = clearGraph(db,graph);
 //		iterateVertices(graph);
@@ -318,7 +363,6 @@ public class Graph {
 //		addEdges(graph, "STALKING",0.2);
 //		iterateEdges(graph);
 //		removeEdges(graph);
-				
 		date = new Date();
 		System.out.println(dateFormat.format(date));
 		db.close(graph);
