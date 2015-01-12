@@ -7,6 +7,7 @@ import java.sql.Time;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -35,6 +36,22 @@ import com.tinkerpop.blueprints.Vertex;
 @SuppressWarnings("deprecation")
 public class Graph {
 	
+	public static Map<String,Integer> typeFrequency;
+	
+	public static TitanGraph clearGraph(Database db, TitanGraph graph){
+		/**
+		 * Delete all the vertices and edges from graph database.
+		 * This closes the connection to graph database as well and reopens a database connection and return graph instance
+		 */
+	
+		db.close(graph);
+		TitanCleanup.clear(graph);
+		System.out.println("Cleared the graph.\n");
+		
+		TitanGraph clear_graph = db.connect();
+		return clear_graph;
+	}
+	
 	public static void build_schema(TitanGraph graph){
 		
 		long time_1 = System.currentTimeMillis();
@@ -48,7 +65,7 @@ public class Graph {
 						
 		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildCompositeIndex();
 		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildCompositeIndex();
-		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
+//		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
 		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildCompositeIndex();
 		mgmt.buildIndex("visible", Vertex.class).addKey(visibleKey).buildCompositeIndex();
@@ -60,11 +77,11 @@ public class Graph {
 	}
 	
 	@SuppressWarnings("unused")
-	public static void InitializeGraph(TitanGraph graph) throws Exception
+	public static void InitializeGraph(TitanGraph graph, int limit) throws Exception
 	{
 		System.out.println("InitializeGraph method called.\n");
 		int START = 0;
-		int MAX_LIMIT = 10;
+		int MAX_LIMIT = limit;
 		
 		Statement stmt;
 		Properties prop = new Properties();
@@ -109,8 +126,8 @@ public class Graph {
 		         longitude = rs.getDouble("longitude");
 		         type = rs.getString("primary_type");
 		         
-		         System.out.println(id+" "+latitude+" "+longitude+" "+type);
-		         /*
+//		         System.out.println(id+" "+latitude+" "+longitude+" "+type);
+
 		         Geoshape place = Geoshape.point(latitude, longitude);
 	 		        
 	 		     Vertex node = graph.addVertex(id);
@@ -118,7 +135,6 @@ public class Graph {
 	 		     node.setProperty("place", place);
 	 		     node.setProperty("visible", 1);
 	 		     count++;
-	 		     */
 		      }
 		    long time_2 = System.currentTimeMillis();
 	 		time += time_2-time_1; 
@@ -139,28 +155,49 @@ public class Graph {
 		}
 	}
 	
-	public static TitanGraph clearGraph(Database db, TitanGraph graph){
-		/**
-		 * Delete all the vertices and edges from graph database.
-		 * This closes the connection to graph database as well and reopens a database connection and return graph instance
+	public static void stats(TitanGraph graph){
+		/*
+		 * 1. Distribution of total instances across different crime types.
 		 */
-	
-		db.close(graph);
-		TitanCleanup.clear(graph);
-		System.out.println("Cleared the graph.\n");
 		
-		TitanGraph clear_graph = db.connect();
-		return clear_graph;
+		Map<String, Integer> typeMap = new HashMap<String, Integer>();
+		int counter_type = 0;
+		
+		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator
+				.hasNext();) {
+			Vertex vertex = iterator.next();
+			String value = vertex.getProperty("type");
+			if(!typeMap.containsKey(value)){
+				typeMap.put(value, 1);
+				counter_type++;
+			}else{
+				int temp = typeMap.get(value);
+				typeMap.put(value, ++temp);
+			}			
+		}
+		
+		System.out.println("Distribution of instances across "+counter_type+" different types : ");
+		
+		Iterator it = typeMap.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)it.next();
+	        System.out.println(pairs.getKey() + " = " + pairs.getValue());
+	    }
+	    Graph.typeFrequency = typeMap;
+	    
 	}
 	
 	public static void addEdges(TitanGraph graph, double distance){
 		
-		double time =0,time_1,time_2 ;
+		double time =0,time_1,time_2, time_3, time_4;
 		int count_edges= 0 ;
+		time_3 = System.currentTimeMillis();
+		
 		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator.hasNext();) {
 			
 			Vertex vertex = iterator.next();
 			vertex.setProperty("visible", 0);
+			
 			Geoshape pointGeoshape = vertex.getProperty("place");
 			double latitude = pointGeoshape.getPoint().getLatitude();
 			double longitude = pointGeoshape.getPoint().getLongitude();
@@ -168,7 +205,7 @@ public class Graph {
 			
 			time_1 = System.currentTimeMillis();
 			
-			for (Iterator <Vertex> iterator2 = graph.query().has("type",Compare.NOT_EQUAL, type).has("visible",Compare.EQUAL,1).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
+			for (Iterator <Vertex> iterator2 = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).has("visible",Compare.EQUAL,1).vertices().iterator();
 					iterator2.hasNext();) {
 				Vertex vertex2 = iterator2.next();
 //				System.out.println(counter+" : "+"Id = "+vertex2.getId()+" Place = "+vertex2.getProperty("place")+" Type = "+vertex2.getProperty("type"));
@@ -189,9 +226,9 @@ public class Graph {
 			time_2 = System.currentTimeMillis();
 			time += (time_2-time_1);
 		}
-		
+		time_4 = System.currentTimeMillis();
 	    System.out.println(" Total time required for insertion of "+count_edges+" edges = "+time+" : Avg. Time = "+(time/count_edges));
-		
+		System.out.println(" Total time for whole method = "+(time_4-time_3));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -450,26 +487,31 @@ public class Graph {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Date date = new Date();
 		
+		// Step 0 : Open Graph Database Connection
 		Database db = new Database();
 		TitanGraph graph = db.connect();
 		System.out.println(dateFormat.format(date));
-//		graph = exp1(db, graph,0.4);
 		
-//		graph = clearGraph(db,graph);
-//		iterateVertices(graph);
-			
-		InitializeGraph(graph);
-//		System.out.println("Graph initialized\n");
+		// Step 1 : Clear initial graph
+		graph = clearGraph(db,graph);
+		/*
+		// Step 2 : Build Schema
+		build_schema(graph);
 		
-//		Map<String, Integer> typeMap = Socrata.statistics(graph);
-//		addEdges(graph,0.2);
-//		iterateVertices(graph);
+		// Step 3 : Initialize Graph Database
+		InitializeGraph(graph,50000);
+		System.out.println("Graph initialized\n");
 		
-//		addEdges(graph, "STALKING",0.2);
-//		iterateEdges(graph);
-//		removeEdges(graph);
+		// Step 4 : Generate stats
+		stats(graph);
+		
+		// Step 5 : Build edges for distance threshold = 0.4
+		addEdges(graph, 0.4);
+		
 		date = new Date();
 		System.out.println(dateFormat.format(date));
+		*/
+		// Step 6 : Close Graph Database Connection
 		db.close(graph);
 		
 	}
