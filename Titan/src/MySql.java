@@ -21,7 +21,7 @@ public class MySql {
 		static String DB_URL = "jdbc:mysql://";
 	    static String USER,PASS,HOSTNAME,DATABASE,TABLE;		
 		
-		public Connection connect() {			   
+		public static Connection connect() {			   
 			Properties prop = new Properties();
 			InputStream input = null;
 			try {	 
