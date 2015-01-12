@@ -1,17 +1,27 @@
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
 import org.apache.commons.collections.functors.ForClosure;
 
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexList;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -23,14 +33,110 @@ import com.tinkerpop.blueprints.Vertex;
  *
  */
 @SuppressWarnings("deprecation")
-public class Graph {	
+public class Graph {
+	
+	public static void build_schema(TitanGraph graph){
+		
+		long time_1 = System.currentTimeMillis();
+		TitanManagement mgmt = graph.getManagementSystem();
+		
+		PropertyKey typeKey = mgmt.makePropertyKey("type").dataType(String.class).make();
+		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
+//		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Timestamp.class).make();
+		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
+		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
+						
+		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildCompositeIndex();
+		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildCompositeIndex();
+		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
+//		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
+		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildCompositeIndex();
+		mgmt.buildIndex("visible", Vertex.class).addKey(visibleKey).buildCompositeIndex();
+		
+		mgmt.commit();
+		long time_2 = System.currentTimeMillis();
+		
+		System.out.println("Schema built in "+(time_2-time_1)+" ms.");
+	}
 	
 	@SuppressWarnings("unused")
 	public static void InitializeGraph(TitanGraph graph) throws Exception
 	{
 		System.out.println("InitializeGraph method called.\n");
-		Socrata http = new Socrata(graph);
+		int START = 0;
+		int MAX_LIMIT = 10;
 		
+		Statement stmt;
+		Properties prop = new Properties();
+		InputStream input = null;
+		try {	 
+			input = new FileInputStream("config/config.properties");
+			prop.load(input);
+	 
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+					}
+				}
+			}
+		
+		Connection conn = (Connection) MySql.connect();
+		if (conn == null) {
+			System.out.println("Connection Error!!");
+		}else{
+			System.out.println("Creating statement...");
+		      
+			stmt = (Statement) conn.createStatement();
+
+		      String sql = "SELECT * FROM dataset ORDER BY date ASC LIMIT "+START+","+MAX_LIMIT;
+		      ResultSet rs = stmt.executeQuery(sql);
+		      
+		      long id;
+	 		  double latitude, longitude, time = 0;
+	 		  String type = null;
+	 		  long time_1 = System.currentTimeMillis();
+	 		  int count = START;
+	 		 
+		      while(rs.next()){
+
+		    	 id  = rs.getInt("id");
+		         latitude = rs.getDouble("latitude");
+		         longitude = rs.getDouble("longitude");
+		         type = rs.getString("primary_type");
+		         
+		         System.out.println(id+" "+latitude+" "+longitude+" "+type);
+		         /*
+		         Geoshape place = Geoshape.point(latitude, longitude);
+	 		        
+	 		     Vertex node = graph.addVertex(id);
+	 		     node.setProperty("type", type);
+	 		     node.setProperty("place", place);
+	 		     node.setProperty("visible", 1);
+	 		     count++;
+	 		     */
+		      }
+		    long time_2 = System.currentTimeMillis();
+	 		time += time_2-time_1; 
+	 		System.out.println("Total vertices added till now = "+count+" in "+(time_2-time_1)+" ms.");
+		    rs.close();
+		    
+		    try{
+		         if(stmt!=null)
+		            conn.close();
+		      }catch(SQLException se){
+		      }// do nothing
+		      try{
+		         if(conn!=null)
+		            conn.close();
+		      }catch(SQLException se){
+		         se.printStackTrace();
+		      }
+		}
 	}
 	
 	public static TitanGraph clearGraph(Database db, TitanGraph graph){
@@ -347,13 +453,12 @@ public class Graph {
 		Database db = new Database();
 		TitanGraph graph = db.connect();
 		System.out.println(dateFormat.format(date));
-		MySql mySql = new MySql(graph);
 //		graph = exp1(db, graph,0.4);
 		
 //		graph = clearGraph(db,graph);
 //		iterateVertices(graph);
 			
-//		InitializeGraph(graph);
+		InitializeGraph(graph);
 //		System.out.println("Graph initialized\n");
 		
 //		Map<String, Integer> typeMap = Socrata.statistics(graph);
