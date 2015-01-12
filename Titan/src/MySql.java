@@ -3,17 +3,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.DriverManager;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Properties;
 
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
 
 public class MySql {
 
@@ -42,7 +34,7 @@ public class MySql {
 			USER = prop.getProperty("mysql.user");
 			PASS = prop.getProperty("mysql.passwd");
 			HOSTNAME = prop.getProperty("mysql.hostname");
-			
+			DATABASE = prop.getProperty("mysql.database");
 			//DB_URL = jdbc:mysql://hostname/database_name
 			DB_URL = DB_URL+HOSTNAME+"/"+DATABASE;
 			   
