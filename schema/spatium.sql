@@ -67,6 +67,24 @@ CREATE TABLE IF NOT EXISTS `location` (
   KEY `type` (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `dataset`
+--
+
+CREATE TABLE IF NOT EXISTS `dataset` (
+  `id` int(11) NOT NULL,
+  `longitude` double(20,12) NOT NULL,
+  `latitude` double(20,12) NOT NULL,
+  `primary_type` varchar(100) NOT NULL,
+  `date` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- --------------------------------------------------------
