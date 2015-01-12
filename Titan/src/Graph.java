@@ -184,11 +184,13 @@ public class Graph {
 		 * Need to return Titangraph instance because clearGraph functions clears the graph and returns new instance
 		 * on which further processing needs to be done.
 		 */
-		graph = Graph.clearGraph(db, graph);
-		Graph.InitializeGraph(graph);
-//		Map<String, Integer> typeMap = Socrata.statistics(graph);
+//		graph = Graph.clearGraph(db, graph);
+//		Graph.InitializeGraph(graph);
+		
+		
+		Map<String, Integer> typeMap = Socrata.statistics(graph);
 //		Graph.iterateEdges(graph);
-//		Graph.removeEdges(graph);
+		Graph.removeEdges(graph);
 		
 //		Graph.addEdges(graph, distance);
 		/*
@@ -301,7 +303,7 @@ public class Graph {
 		TitanGraph graph = db.connect();
 		System.out.println(dateFormat.format(date));
 		
-		graph = exp1(db, graph,0.2);
+		graph = exp1(db, graph,1.0);
 		
 //		graph = clearGraph(db,graph);
 //		iterateVertices(graph);
