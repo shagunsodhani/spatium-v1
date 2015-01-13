@@ -430,6 +430,37 @@ public class Graph {
 		
 	}
 	
+	public static void exploreNeighboursGeo(TitanGraph graph, double distance) {
+		
+		System.out.println("Exploring neighbours using Geoshape and Geo.WITHIN i.e, using Standard Indexing");
+		int counter = 0;
+		double time = 0;
+		double time_1 = System.currentTimeMillis();
+		
+		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator
+				.hasNext();) {
+			double time_3 = System.currentTimeMillis();
+			Vertex vertex = iterator.next();
+			
+			Geoshape pointGeoshape = vertex.getProperty("place");
+			double latitude = pointGeoshape.getPoint().getLatitude();
+			double longitude = pointGeoshape.getPoint().getLongitude();
+			String type = vertex.getProperty("type");
+			
+			Iterator<Vertex>iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator();
+			
+			double time_4 = System.currentTimeMillis();
+			
+			time += time_4-time_3;
+			counter++;
+		}
+		double time_2 = System.currentTimeMillis();
+		
+		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
+		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+		
+	}
+	
 	public static double exploreNeighboursEdge(TitanGraph graph, String type, double distance) {
 		
 		System.out.println("Exploring neighbours using Edge Traversal");
@@ -477,6 +508,27 @@ public class Graph {
 		return (time_2-time_1);
 	}
 	
+	public static void exploreNeighboursEdge(TitanGraph graph, double distance) {
+		
+		System.out.println("Exploring neighbours using Edge Traversal");
+		double time = 0,time_3,time_4;
+		double time_1 = System.currentTimeMillis();
+		int counter = 0;
+		
+		for (Iterator<Vertex> iterator = graph.getVertices().iterator();iterator.hasNext();) {
+			time_3 = System.currentTimeMillis();
+		    Vertex vertex = iterator.next();
+		    Iterator<Vertex> iterator2 = vertex.query().vertices().iterator();
+		    counter++;
+		    time_4 = System.currentTimeMillis(); 
+		    time += time_4-time_3;
+		}
+		
+		double time_2 = System.currentTimeMillis();
+		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
+		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+	}
+	
 	/**
 	 * @param args
 	 * @throws Exception 
@@ -493,25 +545,31 @@ public class Graph {
 		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
-		graph = clearGraph(db,graph);
+//		graph = clearGraph(db,graph);
 		
 		// Step 2 : Build Schema
-		build_schema(graph);
+//		build_schema(graph);
 		
 		// Step 3 : Initialize Graph Database
-		InitializeGraph(graph,50000);
-		System.out.println("Graph initialized\n");
+//		InitializeGraph(graph,50000);
+//		System.out.println("Graph initialized\n");
 		
 		// Step 4 : Generate stats
-		stats(graph);
+//		stats(graph);
 		
 		// Step 5 : Build edges for distance threshold = 0.4
-		addEdges(graph, 0.4);
+//		addEdges(graph, 0.4);
 		
 		date = new Date();
 		System.out.println(dateFormat.format(date));
 		
-		// Step 6 : Close Graph Database Connection
+		// Step 6 : Explore neighbors for distance threshold = 0.4 using Edge Traversal
+		exploreNeighboursEdge(graph, 0.4);
+		
+		// Step 7 : Explore neighbors for distance threshold = 0.4 using Geo.WITHIN
+		exploreNeighboursGeo(graph, 0.4);
+				 
+		// Step 8 : Close Graph Database Connection
 		db.close(graph);
 		
 	}
