@@ -64,8 +64,8 @@ public class Graph {
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
 						
 		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildCompositeIndex();
-		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildCompositeIndex();
-//		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
+//		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildCompositeIndex();
+		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
 		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildCompositeIndex();
 		mgmt.buildIndex("visible", Vertex.class).addKey(visibleKey).buildCompositeIndex();
@@ -111,6 +111,7 @@ public class Graph {
 			stmt = (Statement) conn.createStatement();
 
 		      String sql = "SELECT * FROM dataset ORDER BY date ASC LIMIT "+START+","+MAX_LIMIT;
+		      System.out.println(sql);
 		      ResultSet rs = stmt.executeQuery(sql);
 		      
 		      long id;
@@ -212,7 +213,7 @@ public class Graph {
 				
 				//Get other point
 				Geoshape pointGeoshape2 = vertex2.getProperty("place");
-				String labelString = vertex2.getProperty("type")+"-"+type;
+//				String labelString = vertex2.getProperty("type")+"-"+type;
 				
 //				Add edge between instances of two different types with label as type1-type2 eg:BATTERY-NARCOTICS only if NARCOTICS-BATTERY edge is not present
 //			    vertex.query().has("id", vertex2.getId()).direction(Direction.BOTH).has(labelString, vertex2).vertices();
@@ -263,7 +264,7 @@ public class Graph {
 				
 				//Get other point
 				Geoshape pointGeoshape2 = vertex2.getProperty("place");
-				String labelString = vertex2.getProperty("type")+"-"+type;
+//				String labelString = vertex2.getProperty("type")+"-"+type;
 				
 //				Add edge between instances of two different types with label as type1-type2 eg:BATTERY-NARCOTICS only if NARCOTICS-BATTERY edge is not present
 //			    vertex.query().has("id", vertex2.getId()).direction(Direction.BOTH).has(labelString, vertex2).vertices();
@@ -545,29 +546,30 @@ public class Graph {
 		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
-//		graph = clearGraph(db,graph);
+		graph = clearGraph(db,graph);
 		
 		// Step 2 : Build Schema
-//		build_schema(graph);
+		build_schema(graph);
 		
 		// Step 3 : Initialize Graph Database
-//		InitializeGraph(graph,50000);
-//		System.out.println("Graph initialized\n");
+		InitializeGraph(graph,100);
+		System.out.println("Graph initialized\n");
 		
 		// Step 4 : Generate stats
-//		stats(graph);
+		stats(graph);
 		
 		// Step 5 : Build edges for distance threshold = 0.4
-//		addEdges(graph, 0.4);
+		addEdges(graph, 0.2);
+		iterateEdges(graph);
 		
 		date = new Date();
 		System.out.println(dateFormat.format(date));
 		
 		// Step 6 : Explore neighbors for distance threshold = 0.4 using Edge Traversal
-		exploreNeighboursEdge(graph, 0.4);
+//		exploreNeighboursEdge(graph, 0.4);
 		
 		// Step 7 : Explore neighbors for distance threshold = 0.4 using Geo.WITHIN
-		exploreNeighboursGeo(graph, 0.4);
+//		exploreNeighboursGeo(graph, 0.4);
 				 
 		// Step 8 : Close Graph Database Connection
 		db.close(graph);

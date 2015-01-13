@@ -50,7 +50,7 @@ public class Database {
 		config.addProperty("storage.backend",prop.getProperty("storage.backend"));
 		config.addProperty("storage.hostname", prop.getProperty("storage.hostname"));
 		config.addProperty("storage.keyspace", prop.getProperty("storage.keyspace"));
-		config.addProperty("storage.batch-loading",prop.getProperty("storage.batch-loading"));
+//		config.addProperty("storage.batch-loading",prop.getProperty("storage.batch-loading"));
 		config.addProperty("ids.block-size",prop.getProperty("ids.block-size"));
 //		System.out.proprintln(config.getProperties("storage.buffer-size"));
 //		System.out.println(config.getProperties(""));
