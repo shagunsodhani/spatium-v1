@@ -87,13 +87,13 @@ class socrata(object):
 		else:
 			return 0
 
-	def fetch_all(self):
-		offset = 580000
+	def fetch_all(self, offset = 0):
 		while(self.fetch_json(offset = offset)):
 			offset+=self.limit
 			print offset, " elements inserted in db."
 
 
 a = socrata(limit = 10000)
-a.fetch_all() 
+offset = 4870000
+a.fetch_all(offset = offset) 
 
