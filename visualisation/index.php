@@ -10,8 +10,8 @@
         <style type="text/css">
             html, body, .container-fluid, .row, .main, #map-canvas { height: 100%; margin-left: 0; padding-left: 5%;}
         </style>
-        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDmwesiSqi0CVrWy-P5h-j9xL6vF7Un3xI">
-        </script>
+
+
     </head>
     
     <body>
@@ -39,13 +39,10 @@
         </nav>
         <div class="container-fluid">
             <div class="row">
-                <div class="col-sm-3 col-md-2 sidebar">
-                    <ul class="nav nav-sidebar">
-                        
-                    </ul>
-                </div>
+                <?php include 'sidebar.php';
+                ?>
                 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-                    <h4 class="page-header">Threshold Distance(R) = 0.3km, Participation Index(PI) = 0.01, Size of Colocation(K) = 1</h4>
+                    <h4 class="page-header">Demo</h4>
                     <div class="row placeholders">
                         <div class="col-sm-12" id="map-canvas" >
                             <h4>Label</h4>
@@ -55,7 +52,9 @@
                 </div>
             </div>
         </div>
-      <!-- </div> -->
+        <?php
+            include "map.php";
+        ?>
         <script src="bootstrap/js/jquery-1.11.2.min.js"></script>
         <script src="bootstrap/js/bootstrap.min.js"></script>
     </body>
