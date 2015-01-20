@@ -1,6 +1,16 @@
 <?php
+
+    
     $ini_array = parse_ini_file("config/config.ini", true);
     $key = $ini_array['map']['key'];
+    $conn = connect();
+    $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, COUNT(*) as count FROM `dataset` WHERE primary_type = :type GROUP BY lat, lng LIMIT 0, 10";
+    $sth = $conn->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));
+    $sth->execute(array(':type' => $type));
+    $result = $sth->fetchAll();
+    // $conn = null;
+    
+
 ?>            
 
             
@@ -9,20 +19,20 @@
 <script src="bootstrap/js/gmaps-heatmap.js"></script>
 <script type="text/javascript">
 // map center
-        var myLatlng = new google.maps.LatLng(41.8500300,-87.6500500);
-        // map options,
-        var myOptions = {
-          zoom: 12,
-          center: myLatlng
-
-        };
-        // standard map
-        map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
-        // heatmap layer
-        heatmap = new HeatmapOverlay(map, 
-          {
+    var myLatlng = new google.maps.LatLng(41.8500300,-87.6500500);
+    // map options,
+    var myOptions = 
+    {
+        zoom: 10,
+        center: myLatlng
+    };
+    // standard map
+    map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+    // heatmap layer
+    heatmap = new HeatmapOverlay(map, 
+        {
             // radius should be small ONLY if scaleRadius is true (or small radius is intended)
-            "radius": 0.004,
+            "radius": 0.008,
             "maxOpacity": 1, 
             // scales the radius based on map zoom
             "scaleRadius": true, 
@@ -45,15 +55,34 @@
             //   '.8': 'blue',
             //   '.95': 'red'
             // }
-          }
-        );
+        }
+    );
+    
+    var testData = {
+            max: 4,
+            min: 2,
+            data:[
 
-        var testData = {
-          max: 4,
-          min: 2,
-          data: [{lat: 41.8500300, lng:-87.6500500, count: 2}, {lat: 41.8500300, lng:-87.6600500, count: 3},{lat: 41.8600300, lng:-87.6600500, count: 4}]
-        };
+    <?php
 
-        heatmap.setData(testData);
+        $count = count($result);
+        if ($count>0)
+        {
+            for($i = 0; $i<$count-1; $i++)  
+            {
+                $value = $result[$i];
+                echo " {lat: ".$value['lat'].", ";
+                echo "lng: ".$value['lng'].", ";
+                echo "count: ".$value['count']."},";
+                // echo "count: 1}, ";
+            }
+            $value = $result[$count-1];
+            echo " {lat: ".$value['lat'].", ";
+            echo "lng: ".$value['lng'].", ";
+            echo "count: ".$value['count']."}";
+        }
+    ?> 
+    ]};
+    heatmap.setData(testData);
 
 </script>
