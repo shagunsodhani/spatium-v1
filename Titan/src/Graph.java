@@ -46,7 +46,7 @@ public class Graph {
 	
 		db.close(graph);
 		TitanCleanup.clear(graph);
-		System.out.println("Cleared the graph.\n");
+		System.out.println("Cleared the graph");
 		
 		TitanGraph clear_graph = db.connect();
 		return clear_graph;
@@ -59,15 +59,16 @@ public class Graph {
 		
 		PropertyKey typeKey = mgmt.makePropertyKey("type").dataType(String.class).make();
 		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
+//		PropertyKey placeKeyTSI = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 //		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Timestamp.class).make();
 		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
 						
 		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildCompositeIndex();
-//		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildCompositeIndex();
+//		mgmt.buildIndex("place", Vertex.class).addKey(placeKeyTSI).buildCompositeIndex();
 		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
-		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildCompositeIndex();
+		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
 		mgmt.buildIndex("visible", Vertex.class).addKey(visibleKey).buildCompositeIndex();
 		
 		mgmt.commit();
@@ -106,20 +107,21 @@ public class Graph {
 		if (conn == null) {
 			System.out.println("Connection Error!!");
 		}else{
-			System.out.println("Creating statement...");
+//			System.out.println("Creating statement...");
 		      
 			stmt = (Statement) conn.createStatement();
 
 		      String sql = "SELECT * FROM dataset ORDER BY date ASC LIMIT "+START+","+MAX_LIMIT;
-		      System.out.println(sql);
+//		      System.out.println(sql);
 		      ResultSet rs = stmt.executeQuery(sql);
-		      
+//		      System.out.println("query printed");
 		      long id;
 	 		  double latitude, longitude, time = 0;
 	 		  String type = null;
 	 		  long time_1 = System.currentTimeMillis();
 	 		  int count = START;
-	 		 
+	 		 long time_3 = System.currentTimeMillis();
+	 		long time_4;
 		      while(rs.next()){
 
 		    	 id  = rs.getInt("id");
@@ -136,7 +138,13 @@ public class Graph {
 	 		     node.setProperty("place", place);
 	 		     node.setProperty("visible", 1);
 	 		     count++;
-		      }
+	 		     if(count%100000 == 0)
+	 		     {
+	 		    	time_4 = System.currentTimeMillis();
+	 		    	 System.out.println("Total vertices added till now = "+count+" in "+(time_4-time_3)+" ms.");
+	 		    	 time_3 = time_4;
+	 		     }
+		      }                                             
 		    long time_2 = System.currentTimeMillis();
 	 		time += time_2-time_1; 
 	 		System.out.println("Total vertices added till now = "+count+" in "+(time_2-time_1)+" ms.");
@@ -403,37 +411,40 @@ public class Graph {
 		
 		System.out.println("Exploring neighbours using Geoshape and Geo.WITHIN i.e, using elasticsearch");
 		int counter = 0;
-//		double time = 0;
+		double time = 0;
 		double time_1 = System.currentTimeMillis();
 		
 		for (Iterator<Vertex> iterator = graph.query().has("type",Compare.EQUAL, type).vertices().iterator(); iterator
 				.hasNext();) {
-//			double time_3 = System.currentTimeMillis();
+			double time_3 = System.currentTimeMillis();
 			Vertex vertex = iterator.next();
-			
+			int count = 0;
 			Geoshape pointGeoshape = vertex.getProperty("place");
 			double latitude = pointGeoshape.getPoint().getLatitude();
 			double longitude = pointGeoshape.getPoint().getLongitude();
 			
-			Iterator<Vertex>iterator2  = graph.query().has("type",Compare.NOT_EQUAL, type).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator();
-			
-//			double time_4 = System.currentTimeMillis();
-			
+			for (Iterator<Vertex> iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator();
+					iterator2.hasNext();){
+				Vertex vertex2 = iterator2.next();
+				count++;
+			}
+			double time_4 = System.currentTimeMillis();
+//			System.out.println("Total vertices explored = "+count);
 //			System.out.println("time required for "+vertex.getId()+" = "+(time_4-time_3));
-//			time += time_4-time_3;
-			counter++;
+			time += time_4-time_3;
+			counter+=count;
 		}
 		double time_2 = System.currentTimeMillis();
 		
 		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
-//		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+		System.out.print("Time excluding initial query "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
 		return (time_2-time_1);
 		
 	}
 	
 	public static void exploreNeighboursGeo(TitanGraph graph, double distance) {
 		
-		System.out.println("Exploring neighbours using Geoshape and Geo.WITHIN i.e, using Standard Indexing");
+		System.out.println("Exploring neighbours using Geoshape and Geo.WITHIN i.e, using Standard Indexing or Elastic Search");
 		int counter = 0;
 		double time = 0;
 		double time_1 = System.currentTimeMillis();
@@ -447,18 +458,23 @@ public class Graph {
 			double latitude = pointGeoshape.getPoint().getLatitude();
 			double longitude = pointGeoshape.getPoint().getLongitude();
 			String type = vertex.getProperty("type");
+//			System.out.println(type);
 			
-			Iterator<Vertex>iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator();
-			
+
+			for(Iterator<Vertex>iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator()
+					;	iterator2.hasNext();){
+				Vertex vertex2 = iterator2.next();
+				counter++;
+			}
+//			counter  += graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).
 			double time_4 = System.currentTimeMillis();
-			
 			time += time_4-time_3;
-			counter++;
+//			counter++;
 		}
 		double time_2 = System.currentTimeMillis();
 		
 		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
-		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+		System.out.print("Time excluding initial query "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
 		
 	}
 	
@@ -520,14 +536,17 @@ public class Graph {
 			time_3 = System.currentTimeMillis();
 		    Vertex vertex = iterator.next();
 		    Iterator<Vertex> iterator2 = vertex.query().vertices().iterator();
-		    counter++;
 		    time_4 = System.currentTimeMillis(); 
 		    time += time_4-time_3;
+		    for( ;	iterator2.hasNext();){
+				Vertex vertex2 = iterator2.next();
+				counter++;
+			}		    
 		}
 		
 		double time_2 = System.currentTimeMillis();
 		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
-		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
+		System.out.print("Time excluding initial query "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
 	}
 	
 	/**
@@ -536,14 +555,14 @@ public class Graph {
 	 */
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
-
+		
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Date date = new Date();
 		
 		// Step 0 : Open Graph Database Connection
 		Database db = new Database();
 		TitanGraph graph = db.connect();
-		System.out.println(dateFormat.format(date));
+//		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
 		graph = clearGraph(db,graph);
@@ -552,28 +571,29 @@ public class Graph {
 		build_schema(graph);
 		
 		// Step 3 : Initialize Graph Database
-		InitializeGraph(graph,100);
-		System.out.println("Graph initialized\n");
-		
+		InitializeGraph(graph,5000);
+		System.out.println("Graph initialized");
+				
 		// Step 4 : Generate stats
 		stats(graph);
 		
 		// Step 5 : Build edges for distance threshold = 0.4
 		addEdges(graph, 0.2);
-		iterateEdges(graph);
+//		iterateEdges(graph);
+		
 		
 		date = new Date();
 		System.out.println(dateFormat.format(date));
 		
 		// Step 6 : Explore neighbors for distance threshold = 0.4 using Edge Traversal
-//		exploreNeighboursEdge(graph, 0.4);
+		exploreNeighboursEdge(graph, 0.2);
 		
-		// Step 7 : Explore neighbors for distance threshold = 0.4 using Geo.WITHIN
-//		exploreNeighboursGeo(graph, 0.4);
-				 
+//		 Step 7 : Explore neighbors for distance threshold = 0.4 using Geo.WITHIN
+//		exploreNeighboursGeo(graph,"LIQUOR LAW VIOLATION", 0.2);
+		exploreNeighboursGeo(graph, 0.2);
 		// Step 8 : Close Graph Database Connection
 		db.close(graph);
-		
+	
 	}
 
 }

@@ -4,6 +4,9 @@ import org.apache.commons.configuration.Configuration;
 
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.hadoop.HadoopFactory;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.formats.cassandra.TitanCassandraHadoopGraph;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -15,7 +18,7 @@ public class Database {
 	
 	public Database()
 	{
-		System.out.println("Default Constructor for Database class called.\n");
+		System.out.println("Default Constructor for Database class called.");
 	}
 	
 	public TitanGraph connect(){
@@ -53,8 +56,6 @@ public class Database {
 //		config.addProperty("storage.batch-loading",prop.getProperty("storage.batch-loading"));
 		config.addProperty("ids.block-size",prop.getProperty("ids.block-size"));
 //		System.out.proprintln(config.getProperties("storage.buffer-size"));
-//		System.out.println(config.getProperties(""));
-		//		storage.buffer-size
 		
 		/*
 		 * Adding properties related to external indexing
@@ -64,9 +65,8 @@ public class Database {
 		config.addProperty("index.search.hostname", prop.getProperty("storage.index.search.hostname"));
 		config.addProperty("index.search.client-only",prop.getProperty("storage.index.search.client-only"));
 
-		
 		TitanGraph g = TitanFactory.open(config);
-		System.out.println("Instantiated Titan Graph Instance");
+//		System.out.println("Instantiated Titan Graph Instance");
 		return g;
 	}
 	
@@ -76,6 +76,6 @@ public class Database {
 		 */
 		graph.commit();
 		graph.shutdown();
-		System.out.println("Connection Closed.\n");
+		System.out.println("Connection Closed.");
 	}	
 }
