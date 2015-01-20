@@ -1,3 +1,12 @@
+<?php
+    
+    require_once("db.php");
+    $type = "clear";
+    if(isset($_GET['type']))
+        $type = $_GET['type'];
+    
+    
+?>
 <!DOCTYPE html>
 <html lang="en">
     <head>
