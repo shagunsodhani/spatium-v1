@@ -4,7 +4,7 @@
     $ini_array = parse_ini_file("config/config.ini", true);
     $key = $ini_array['map']['key'];
     $conn = connect();
-    $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, COUNT(*) as count FROM `dataset` WHERE primary_type = :type GROUP BY lat, lng LIMIT 0, 10";
+    $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, COUNT(*) as count FROM `dataset` WHERE primary_type = :type GROUP BY lat, lng LIMIT 0, 1000";
     $sth = $conn->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));
     $sth->execute(array(':type' => $type));
     $result = $sth->fetchAll();
