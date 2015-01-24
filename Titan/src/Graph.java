@@ -9,11 +9,17 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
 import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
 import org.apache.commons.collections.functors.ForClosure;
+import org.elasticsearch.common.mvel2.optimizers.impl.refl.nodes.ThisValueAccessor;
 
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
@@ -24,10 +30,20 @@ import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.formats.util.TitanHadoopGraph;
+import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
+import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.HadoopGremlin;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query.Compare;
+import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.rexster.client.RexProClientConnection;
+import com.tinkerpop.rexster.client.RexsterClient;
+import com.tinkerpop.rexster.client.RexsterClientFactory;
 
 /**
  * @author precise
@@ -35,6 +51,8 @@ import com.tinkerpop.blueprints.Vertex;
  */
 @SuppressWarnings("deprecation")
 public class Graph {
+	
+	public static Map<String, Integer> countMap;
 	
 	public static Map<String,Integer> typeFrequency;
 	
@@ -562,26 +580,28 @@ public class Graph {
 		// Step 0 : Open Graph Database Connection
 		Database db = new Database();
 		TitanGraph graph = db.connect();
-//		System.out.println(dateFormat.format(date));
+		
+		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
-		graph = clearGraph(db,graph);
-		
+//		graph = clearGraph(db,graph);
+			
 		// Step 2 : Build Schema
-		build_schema(graph);
+//		build_schema(graph);
 		
 		// Step 3 : Initialize Graph Database
-		InitializeGraph(graph,5000);
+//		InitializeGraph(graph,200);
+		
+		/*
 		System.out.println("Graph initialized");
 				
 		// Step 4 : Generate stats
 		stats(graph);
-		
+		/*
 		// Step 5 : Build edges for distance threshold = 0.4
 		addEdges(graph, 0.2);
 //		iterateEdges(graph);
-		
-		
+			
 		date = new Date();
 		System.out.println(dateFormat.format(date));
 		
@@ -590,10 +610,82 @@ public class Graph {
 		
 //		 Step 7 : Explore neighbors for distance threshold = 0.4 using Geo.WITHIN
 //		exploreNeighboursGeo(graph,"LIQUOR LAW VIOLATION", 0.2);
-		exploreNeighboursGeo(graph, 0.2);
+		 */
+		
+//		TransactionalGraph tx = graph.newTransaction();
+		
+//		Thread[] threads = new Thread[1005];
+		/*
+		FutureTask<Integer>[] futureTask = null;
+		for(int j=0;j<100;j++){
+			futureTask[j] = new FutureTask<Interger>(null);
+		}
+		
+		ExecutorService executor = Executors.newFixedThreadPool(1000);
+		Iterator<Vertex> iterator = graph.getVertices().iterator();
+		int i;
+		int counter = 0;
+			
+		for (i=0;iterator.hasNext();i++){
+				
+			Vertex vertex = iterator.next();
+			System.out.println("Hello"+vertex.getId());
+			Callable exploreNeighbours = new ExploreNeighbours(graph, vertex);
+			FutureTask<Integer> futureTasks = (FutureTask<Integer>) executor.submit(exploreNeighbours);
+			
+//			executor.execute(futureTasks[i]);
+//			threads[i] = new Thread(exploreNeighbours);
+//			threads[i].start();
+		}
+			
+		System.out.println("Total threads created = "+i);
+		i--;
+		/*
+		for(;i>=0;){
+			if(futureTasks[i].isDone()){
+				counter += futureTasks[i].get();
+				i--;
+			}		
+		}
+		*/
+		
+		exploreNeighboursGeo(graph, 1);
+		double time1 = System.currentTimeMillis();
+		
+		Graph.countMap = new HashMap<String,Integer>();
+		
+		Thread[] threads = new Thread[10000];
+		Iterator<Vertex> iterator = graph.getVertices().iterator();
+		int i;
+		for(i = 0;iterator.hasNext();i++){
+			
+			Vertex vertex = iterator.next();
+			WorkThread workthread = new WorkThread(graph,vertex);
+			threads[i] = new Thread(workthread);
+			threads[i].start();			
+		}
+		int count = 0;
+		System.out.println("Total vertices = "+i);
+		i--;
+		for(int j=0;j<=i;j++){
+			threads[j].join();
+		}
+		
+		Iterator it = countMap.entrySet().iterator();
+		
+	    while (it.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)it.next();
+//	        System.out.println(pairs.getKey() + " = " + pairs.getValue());
+	        count += (Integer)pairs.getValue();
+	    }
+		double time2 = System.currentTimeMillis();	
+		System.out.println("Total time required = "+(time2-time1)+ " for "+count+" nodes");
+		
 		// Step 8 : Close Graph Database Connection
 		db.close(graph);
-	
+		
+		
+		
 	}
 
 }

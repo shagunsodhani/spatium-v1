@@ -1,3 +1,4 @@
+import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
 import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -6,7 +7,10 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.hadoop.HadoopFactory;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.cassandra.TitanCassandraHadoopGraph;
+import com.thinkaurelius.titan.hadoop.formats.util.TitanHadoopGraph;
+import com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -19,6 +23,22 @@ public class Database {
 	public Database()
 	{
 		System.out.println("Default Constructor for Database class called.");
+	}
+	
+	public HadoopGraph connectHadoopGraph() throws Exception{
+		
+		/**
+		 * Method to connect to the titan-hadoop graph database
+		 */
+		HadoopGraph graph = HadoopFactory.open("config/titan-graphson.properties");
+//		HadoopGraph graph = HadoopFactory.open("config/config.properties");
+		System.out.println("Worked");
+		return graph;
+	}
+	
+	public void closeHadoopGraph(HadoopGraph graph){
+		graph.shutdown();
+		System.out.println("Hadoop Graph Closed");
 	}
 	
 	public TitanGraph connect(){
