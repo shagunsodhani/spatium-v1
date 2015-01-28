@@ -55,11 +55,9 @@ CREATE TABLE IF NOT EXISTS `instance` (
 
 CREATE TABLE IF NOT EXISTS `location` (
   `instanceid` int(11) NOT NULL,
-  `x` int(11) NOT NULL,
-  `y` int(11) NOT NULL,
   `type` int(11) NOT NULL,
-  `lat` text NOT NULL,
-  `lng` text NOT NULL,
+  `lat` double(25,15) NOT NULL,
+  `lng` double(25,15) NOT NULL,
   PRIMARY KEY (`instanceid`),
   UNIQUE KEY `instanceid` (`instanceid`),
   KEY `instanceid_2` (`instanceid`),
