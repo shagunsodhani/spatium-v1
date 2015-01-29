@@ -26,13 +26,15 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, dbname, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=0.2, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
+	def __init__(self, dbname, sql_populate = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 5000",  mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=0.2, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
 		
 		self.inFile = inFile
 		self.mappingFile = mappingFile
 		self.mapping = {}
 		self.instance_superset = {}
-		self.conn = db.connect(app_name, dbname)
+		self.app_name = app_name
+		self.sql_populate = sql_populate
+		self.conn = db.connect(self.app_name, dbname)
 		self.cursor = self.conn.cursor()
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
@@ -56,15 +58,18 @@ class Miner(object):
 	
 	def initialise_location(self):
 		"""To initialise location table"""
+		conn = db.connect(self.app_name, 'spatium')
+		cursor = conn.cursor()
 		sql = "SELECT DISTINCT(primary_type) FROM dataset"
-		result = db.read(sql, self.cursor)
+		result = db.read(sql, cursor)
 		j = 1;
 		for i in result:
 			self.mapping[str(i[0])] = j
 			j+=1
 
-		sql = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 100" 
-		result = db.read(sql, self.cursor)
+		result = db.read(self.sql_populate, cursor)
+		cursor.close()
+		conn.close()
 		for i in result:
 			self.instance_superset[i[0]] = {}
 			self.instance_superset[i[0]]['type'] = str(self.mapping[str(i[1])])
@@ -170,7 +175,7 @@ class Miner(object):
 		for i in range(0, length-1):
 			for j in range(i+1, length):
 				sql = "select i.instanceid, j.instanceid from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
-				   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lon/180.0-PI()*i.lon/180.0))*6371 <= "+str(R)
+				   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lng/180.0-PI()*i.lng/180.0))*6371 <= "+str(R)
 				result = db.read(sql, self.cursor)	
 				A_temp = {}
 				B_temp = {}
@@ -297,7 +302,7 @@ class Miner(object):
 			for j in range(1,k-1):	
 				sql+= "T1.instanceid"+str(j) + " = T2.instanceid"+str(j)+" AND "
 			sql+= " L1.instanceid = T1.instanceid"+str(k-1)+" AND L2.instanceid = T2.instanceid"+str(k-1)+" \
-			AND ACOS(SIN(PI()*L1.lat/180.0)*SIN(PI()*L2.lat/180.0)+COS(PI()*L1.lat/180.0)*COS(PI()*L2.lat/180.0)*COS(PI()*L2.lon/180.0-PI()*L1.lon/180.0))*6371 <= "+str(R)
+			AND ACOS(SIN(PI()*L1.lat/180.0)*SIN(PI()*L2.lat/180.0)+COS(PI()*L1.lat/180.0)*COS(PI()*L2.lat/180.0)*COS(PI()*L2.lng/180.0-PI()*L1.lng/180.0))*6371 <= "+str(R)
 			if(self.quiet == 0):
 				print sql
 			instance_result = db.read(sql, self.cursor)
