@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import time
 from itertools import chain, combinations
 from collections import defaultdict
 from optparse import OptionParser
@@ -244,6 +245,9 @@ class Miner(object):
 		#contains all candidate co-locations for table instance computation
 
 		if self.create == 1:
+
+
+
 			create_table(k, self.cursor)
 		
 		sql = "SELECT "
@@ -375,3 +379,47 @@ class Miner(object):
 				if(sql_instance[-1] == ')'):
 					# print sql_instance
 					db.write(sql_instance, self.cursor, self.conn)
+
+
+	def explore_neighbours(self):
+
+		"""to generate colocations of size 2"""
+
+		k=2
+		table_candidate_name = "candidate"+str(k)
+		table_instance_name = "instance"+str(k)
+
+		if self.create == 1:
+			create_table(k, self.cursor)
+
+		sql = "select type, count(*) from location group by type"
+		result = db.read(sql, self.cursor)
+		type_count = {}
+		candidate_list = []
+		for i in result:
+			candidate_list.append(int(i[0]))
+			type_count[int(i[0])] = int(i[1])
+
+		sql = "select colocation, label from candidate where size = 1"
+		result = db.read(sql, self.cursor)
+		colocation_label = {}
+		for i in result:
+			colocation_label[int(i[0])] = int(i[1])
+
+		candidate_list.sort()
+
+		length = len(candidate_list)
+		R = self.threshold_distance
+		number_of_edges = 0
+
+		start_time = time.time()
+		for i in range(0, length):
+			for j in range(0, length):
+				if (i!=j):
+					sql = "select count(*) from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
+					   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lng/180.0-PI()*i.lng/180.0))*6371 <= "+str(R)
+					result = db.read(sql, self.cursor)
+					number_of_edges+=int(result[0][0])
+
+		time_taken = time.time() - start_time
+		return (time_taken, number_of_edges)
