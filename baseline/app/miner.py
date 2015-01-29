@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import time
 from itertools import chain, combinations
 from collections import defaultdict
 from optparse import OptionParser
@@ -26,27 +27,31 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, dbname, mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=0.2, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
+	def __init__(self, dbname, sql_populate = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 5000", app_name = "spatium", threshold_distance=0.2, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
 		
-		self.inFile = inFile
-		self.mappingFile = mappingFile
 		self.mapping = {}
 		self.instance_superset = {}
-		self.conn = db.connect(app_name, dbname)
+		self.app_name = app_name
+		self.sql_populate = sql_populate
+		self.dbname = dbname
+		self.conn = db.connect(self.app_name, dbname)
 		self.cursor = self.conn.cursor()
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
 		self.create = create_table
 		self.quiet = quiet
+		self.kmax = kmax
 
 	def clean(self):
-		db.truncate('location', self.cursor)
-		db.truncate('instance', self.cursor)
-		db.truncate('candidate', self.cursor)
-		k=self.kmax
-		for i in range(1,k+1):
-			table_name = "instance"+str(i)
-			db.drop(table_name, self.cursor)
+		
+		db.drop('location', self.cursor)
+		db.drop('dataset', self.cursor)
+		db.drop('candidate', self.cursor)
+		db.drop('instance', self.cursor)
+		for i in range(2,self.kmax+1):
+			db.drop('candidate'+str(i), self.cursor)
+			db.drop('instance'+str(i), self.cursor)
+		db.delete_db(self.dbname, self.app_name)
 
 	def initialise(self):
 		"""To initialise the class variables"""
@@ -56,15 +61,18 @@ class Miner(object):
 	
 	def initialise_location(self):
 		"""To initialise location table"""
+		conn = db.connect(self.app_name, 'spatium')
+		cursor = conn.cursor()
 		sql = "SELECT DISTINCT(primary_type) FROM dataset"
-		result = db.read(sql, self.cursor)
+		result = db.read(sql, cursor)
 		j = 1;
 		for i in result:
 			self.mapping[str(i[0])] = j
 			j+=1
 
-		sql = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 100" 
-		result = db.read(sql, self.cursor)
+		result = db.read(self.sql_populate, cursor)
+		cursor.close()
+		conn.close()
 		for i in result:
 			self.instance_superset[i[0]] = {}
 			self.instance_superset[i[0]]['type'] = str(self.mapping[str(i[1])])
@@ -170,7 +178,7 @@ class Miner(object):
 		for i in range(0, length-1):
 			for j in range(i+1, length):
 				sql = "select i.instanceid, j.instanceid from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
-				   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lon/180.0-PI()*i.lon/180.0))*6371 <= "+str(R)
+				   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lng/180.0-PI()*i.lng/180.0))*6371 <= "+str(R)
 				result = db.read(sql, self.cursor)	
 				A_temp = {}
 				B_temp = {}
@@ -237,6 +245,9 @@ class Miner(object):
 		#contains all candidate co-locations for table instance computation
 
 		if self.create == 1:
+
+
+
 			create_table(k, self.cursor)
 		
 		sql = "SELECT "
@@ -297,7 +308,7 @@ class Miner(object):
 			for j in range(1,k-1):	
 				sql+= "T1.instanceid"+str(j) + " = T2.instanceid"+str(j)+" AND "
 			sql+= " L1.instanceid = T1.instanceid"+str(k-1)+" AND L2.instanceid = T2.instanceid"+str(k-1)+" \
-			AND ACOS(SIN(PI()*L1.lat/180.0)*SIN(PI()*L2.lat/180.0)+COS(PI()*L1.lat/180.0)*COS(PI()*L2.lat/180.0)*COS(PI()*L2.lon/180.0-PI()*L1.lon/180.0))*6371 <= "+str(R)
+			AND ACOS(SIN(PI()*L1.lat/180.0)*SIN(PI()*L2.lat/180.0)+COS(PI()*L1.lat/180.0)*COS(PI()*L2.lat/180.0)*COS(PI()*L2.lng/180.0-PI()*L1.lng/180.0))*6371 <= "+str(R)
 			if(self.quiet == 0):
 				print sql
 			instance_result = db.read(sql, self.cursor)
@@ -368,3 +379,47 @@ class Miner(object):
 				if(sql_instance[-1] == ')'):
 					# print sql_instance
 					db.write(sql_instance, self.cursor, self.conn)
+
+
+	def explore_neighbours(self):
+
+		"""to generate colocations of size 2"""
+
+		k=2
+		table_candidate_name = "candidate"+str(k)
+		table_instance_name = "instance"+str(k)
+
+		if self.create == 1:
+			create_table(k, self.cursor)
+
+		sql = "select type, count(*) from location group by type"
+		result = db.read(sql, self.cursor)
+		type_count = {}
+		candidate_list = []
+		for i in result:
+			candidate_list.append(int(i[0]))
+			type_count[int(i[0])] = int(i[1])
+
+		sql = "select colocation, label from candidate where size = 1"
+		result = db.read(sql, self.cursor)
+		colocation_label = {}
+		for i in result:
+			colocation_label[int(i[0])] = int(i[1])
+
+		candidate_list.sort()
+
+		length = len(candidate_list)
+		R = self.threshold_distance
+		number_of_edges = 0
+
+		start_time = time.time()
+		for i in range(0, length):
+			for j in range(0, length):
+				if (i!=j):
+					sql = "select count(*) from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
+					   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lng/180.0-PI()*i.lng/180.0))*6371 <= "+str(R)
+					result = db.read(sql, self.cursor)
+					number_of_edges+=int(result[0][0])
+
+		time_taken = time.time() - start_time
+		return (time_taken, number_of_edges)
