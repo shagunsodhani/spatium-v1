@@ -68,6 +68,7 @@ def truncate(table_name, cursor):
 
 def drop(table_name, cursor):
     sql = "DROP TABLE IF EXISTS " + str(table_name)
+    print sql
     read(sql, cursor)
 
 
@@ -127,6 +128,7 @@ def delete_db(db_name, app_name = "spatium"):
 
     conn = connect(app_name, -1)
     sql = "DROP DATABASE "+db_name
+    print sql
     cursor = conn.cursor()
     try:
         cursor.execute(sql)
