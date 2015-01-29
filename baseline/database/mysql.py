@@ -19,13 +19,13 @@ def connect(app_name = "spatium", db_name = 1, config_path = os.path.join(os.pat
     host=config.get(app_name,"host")
     user=config.get(app_name,"user")
     passwd=config.get(app_name,"passwd")
+
     if(db_name == 1):
         db=config.get(app_name,"db")
     else:
         db = db_name
     charset=config.get(app_name,"charset")
     use_unicode=config.get(app_name,"use_unicode")
-
 
     try:
         if (db_name==-1):
@@ -75,7 +75,6 @@ def check_column(table,column,cursor):
     '''Used to check if `column` exists in `table`
        Need to pass the cursor object as a parameter'''
     sql="SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{}' AND COLUMN_NAME =  '{}'".format(table,column)
-    #print sql
     try:
         return cursor.execute(sql)
     except MySQLdb.ProgrammingError, e:
@@ -112,7 +111,6 @@ def create_db(db_name, sql, app_name = "spatium"):
     
     cursor.close()
     conn.close()
-
     conn = connect(app_name, db_name)
     cursor = conn.cursor()
     try:
@@ -120,7 +118,7 @@ def create_db(db_name, sql, app_name = "spatium"):
     except MySQLdb.ProgrammingError, e:
         print "ERROR %d IN CREATE DB OPERATION: %s" % (e.args[0], e.args[1])
         print "LAST QUERY WAS: %s" %sql
-    
+
     cursor.close()
     conn.close()    
 
@@ -129,17 +127,12 @@ def delete_db(db_name, app_name = "spatium"):
 
     conn = connect(app_name, -1)
     sql = "DROP DATABASE "+db_name
-    print sql
     cursor = conn.cursor()
     try:
-        print "shagun"
         cursor.execute(sql)
-        print "1"
         conn.commit()
-        print "2"
     except MySQLdb.ProgrammingError, e:
         print "ERROR %d IN DELETE DB OPERATION: %s" % (e.args[0], e.args[1])
         print "LAST QUERY WAS: %s" %sql
     cursor.close()
     conn.close()
-    print sql

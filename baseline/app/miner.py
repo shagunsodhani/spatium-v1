@@ -31,7 +31,7 @@ class Miner(object):
 		self.inFile = inFile
 		self.mappingFile = mappingFile
 		self.mapping = {}
-		# print dbname
+		self.instance_superset = {}
 		self.conn = db.connect(app_name, dbname)
 		self.cursor = self.conn.cursor()
 		self.threshold_distance = threshold_distance
@@ -56,8 +56,21 @@ class Miner(object):
 	
 	def initialise_location(self):
 		"""To initialise location table"""
-		f_infile = open(self.inFile, 'r')
-		self.instance_superset = json.load(f_infile)
+		sql = "SELECT DISTINCT(primary_type) FROM dataset"
+		result = db.read(sql, self.cursor)
+		j = 1;
+		for i in result:
+			self.mapping[str(i[0])] = j
+			j+=1
+
+		sql = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 100" 
+		result = db.read(sql, self.cursor)
+		for i in result:
+			self.instance_superset[i[0]] = {}
+			self.instance_superset[i[0]]['type'] = str(self.mapping[str(i[1])])
+			self.instance_superset[i[0]]['latitude'] = str(i[2])
+			self.instance_superset[i[0]]['longitude'] = str(i[3])
+
 		sql_location = "INSERT INTO location (instanceid, type, lat, lng) values "
 		count = 1
 		for i in self.instance_superset:
@@ -77,8 +90,6 @@ class Miner(object):
 
 	def initialise_candidate(self):
 		"""To initialise candidate table"""
-		f_mapping = open(self.mappingFile, 'r')
-		self.mapping = json.load(f_mapping)
 		sql_candidate = "INSERT INTO candidate (colocation, pi) values "
 		count = 1
 		for i in self.mapping :
@@ -106,9 +117,6 @@ class Miner(object):
 		label_colocation = {}
 		for i in result:
 			label_colocation[str(i[0])] = str(i[1])
-
-		f_infile = open(self.inFile, 'r')
-		self.instance_superset = json.load(f_infile)
 		sql_instance = "INSERT INTO instance (label, instance) values "
 		count = 1
 		for i in self.instance_superset:
