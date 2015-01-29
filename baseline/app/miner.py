@@ -32,21 +32,25 @@ class Miner(object):
 		self.instance_superset = {}
 		self.app_name = app_name
 		self.sql_populate = sql_populate
+		self.dbname = dbname
 		self.conn = db.connect(self.app_name, dbname)
 		self.cursor = self.conn.cursor()
 		self.threshold_distance = threshold_distance
 		self.minPrevalance = minPrevalance
 		self.create = create_table
 		self.quiet = quiet
+		self.kmax = kmax
 
 	def clean(self):
-		db.truncate('location', self.cursor)
-		db.truncate('instance', self.cursor)
-		db.truncate('candidate', self.cursor)
-		k=self.kmax
-		for i in range(1,k+1):
-			table_name = "instance"+str(i)
-			db.drop(table_name, self.cursor)
+		
+		db.drop('location', self.cursor)
+		db.drop('dataset', self.cursor)
+		db.drop('candidate', self.cursor)
+		db.drop('instance', self.cursor)
+		for i in range(2,self.kmax+1):
+			db.drop('candidate'+str(i), self.cursor)
+			db.drop('instance'+str(i), self.cursor)
+		db.delete_db(self.dbname, self.app_name)
 
 	def initialise(self):
 		"""To initialise the class variables"""
