@@ -26,10 +26,8 @@ class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
 
-	def __init__(self, dbname, sql_populate = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 5000",  mappingFile = "Input_Preprocessing/mapping.json", inFile = "Input_Preprocessing/input_preprocessed.json", app_name = "spatium", threshold_distance=0.2, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
+	def __init__(self, dbname, sql_populate = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 5000", app_name = "spatium", threshold_distance=0.2, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
 		
-		self.inFile = inFile
-		self.mappingFile = mappingFile
 		self.mapping = {}
 		self.instance_superset = {}
 		self.app_name = app_name
