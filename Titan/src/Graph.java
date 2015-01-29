@@ -14,16 +14,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
+
+import cern.colt.matrix.doublealgo.Statistic;
+
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanGraphTransaction;
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Query.Compare;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -37,6 +45,8 @@ public class Graph {
 	public static Map<String, Integer> countMap;
 	
 	public static Map<String,Integer> typeFrequency;
+	
+	public static Map<String, Double> edgesMap;
 	
 	public static TitanGraph clearGraph(Database db, TitanGraph graph){
 		/**
@@ -289,6 +299,47 @@ public class Graph {
 		double time_2 = System.currentTimeMillis();
 		System.out.println("Total no. of edges added for type = "+type+" are = "+counter+" in "+(time_2-time_1)+ "ms.\n");
 		return (time_2-time_1);
+	}
+	
+	public static void addEdgesMultiThread(TitanGraph graph, double distance){
+		
+		double time1 = System.currentTimeMillis();	
+
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		Iterator<Vertex> iterator = graph.getVertices().iterator();
+		int i;
+		
+		for(i = 1;iterator.hasNext();i++){
+			
+			Vertex vertex = iterator.next();
+			EdgeInsertion edgeInsertion = new EdgeInsertion(graph,vertex,distance);
+			executorService.execute(edgeInsertion);
+		}
+		executorService.shutdown();
+		
+		while(!executorService.isTerminated()){
+			;
+		}
+		System.out.println("All the threads terminated successfully");
+		
+		Iterator it = edgesMap.entrySet().iterator();
+		int count = 0;
+		
+	    while (it.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)it.next();
+	        String key = (String) pairs.getKey();
+	        double distance1 = (double) pairs.getValue();
+	        count++;
+	        
+	        String[] vertex_ids = key.split("-");
+	        Vertex vertex1 = graph.getVertex(vertex_ids[0]);
+	        Vertex vertex2 = graph.getVertex(vertex_ids[1]);
+	        vertex1.addEdge(""+count, vertex2);
+	        
+//	        System.out.println("Edge added between = "+vertex_ids[0]+" and "+vertex_ids[1]);
+	    }
+		double time2 = System.currentTimeMillis();	
+		System.out.println("Total time required = "+(time2-time1)+ " for "+count+" edges");
 	}
 		
 	public static void iterateVertices(TitanGraph graph){
@@ -595,6 +646,8 @@ public class Graph {
 	 */
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
+		Graph.countMap = new ConcurrentHashMap<String,Integer>();
+		Graph.edgesMap = new ConcurrentHashMap<String,Double>();
 		
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Date date = new Date();
@@ -602,19 +655,22 @@ public class Graph {
 		// Step 0 : Open Graph Database Connection
 		Database db = new Database();
 		TitanGraph graph = db.connect();
+//		TransactionalGraph graph = graph1.newTransaction();
+//		graph.
 		
 		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
-//		graph = clearGraph(db,graph);
+//		graph = clearGraph(db,(TitanGraph) graph);
 			
 		// Step 2 : Build Schema
 //		build_schema(graph);
 		
 		// Step 3 : Initialize Graph Database
-//		InitializeGraph(graph,10000);
+//		InitializeGraph(graph,15000);
 //		System.out.println("Graph initialized");
-				
+
+		addEdgesMultiThread(graph, 0.2);
 		/*
 		// Step 4 : Generate stats
 		stats(graph);
@@ -633,11 +689,11 @@ public class Graph {
 //		exploreNeighboursGeo(graph,"LIQUOR LAW VIOLATION", 0.2);
 		 */
 		
-		Graph.countMap = new ConcurrentHashMap<String,Integer>();
+//		Graph.countMap = new ConcurrentHashMap<String,Integer>();
 
 //		exploreNeighboursGeo(graph, 0.2);
-		exploreNeighboursGeoMultiThread(graph, 0.2);
-		
+//		exploreNeighboursGeoMultiThread(graph, 0.2);
+				
 		// Step 8 : Close Graph Database Connection
 		db.close(graph);
 		
