@@ -119,8 +119,8 @@ def create_db(db_name, sql, app_name = "spatium"):
         print "ERROR %d IN CREATE DB OPERATION: %s" % (e.args[0], e.args[1])
         print "LAST QUERY WAS: %s" %sql
 
-    cursor.close()
-    conn.close()    
+    # cursor.close()
+    # conn.close()    
 
 def delete_db(db_name, app_name = "spatium"):
     '''Delete Database'''
