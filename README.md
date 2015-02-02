@@ -13,4 +13,8 @@ Next task is to port the Join-Based Algorithm to a graph database. We plan on us
 
 We are using crime data for City of Chicago, USA. It can be accessed [here](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-present/ijzp-q8t2). 
 
+Stage - I
 For more technical details, go through our [Initial Survey Report](https://sites.google.com/site/sanketmehtaiitr/spatium). Also go through our [demo](http://shagunsodhani.in/spatium/demo.html) and [presentation](http://slides.com/shagun/spatium).
+
+Stage - II
+We are using [Titan](http://thinkaurelius.github.io/titan/): Distributed Graph Database for our project. We have setup a titan with cassandra as a backend stroage and elasticsearch as external indexing technique. To get better understanding about Titan, we conducted several exteriments, (compared Titan Standard Index with Elasticsearch, implemented multi-threaded version of neighbourhood exploration, etc). For more details, go through our [Titan Setup and its exploration Report](https://sites.google.com/site/sanketmehtaiitr/spatium). 
