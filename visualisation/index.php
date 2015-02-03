@@ -2,10 +2,12 @@
     
     require_once("db.php");
     $type = "clear";
+    $size = 1;
     if(isset($_GET['type']))
         $type = $_GET['type'];
-    
-    
+    if(isset($_GET['size']))
+        $size = $_GET['size'];
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,7 +21,6 @@
         <style type="text/css">
             html, body, .container-fluid, .row, .main, #map-canvas { height: 100%; margin-left: 0; padding-left: 5%;}
         </style>
-
 
     </head>
     
