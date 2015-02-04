@@ -4,11 +4,11 @@
     $ini_array = parse_ini_file("config/config.ini", true);
     $key = $ini_array['map']['key'];
 
-    $command = "/usr/lib/jvm/java-7-openjdk-amd64/bin/java -Xms4096M -Xmx7680M -Dfile.encoding=UTF-8 -classpath /home/precise/spatium/Titan/bin:/home/precise/spatium/Titan/lib/* Graph "+$size;
-    echo exec($command);
+    $command = "/usr/lib/jvm/java-7-openjdk-amd64/bin/java -Xms4096M -Xmx7680M -Dfile.encoding=UTF-8 -classpath /home/precise/spatium/Titan/bin:/home/precise/spatium/Titan/lib/* Visualisation "+$typetyptypecho exec($command);
 
     $conn = connect();
-    $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, COUNT(*) as count FROM `dataset` WHERE primary_type = :type GROUP BY lat, lng LIMIT 0, 1000";
+    $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, count FROM `results`";
+    // $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, COUNT(*) as count FROM `dataset` WHERE primary_type = :type GROUP BY lat, lng LIMIT 0, 1000";
     $sth = $conn->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));
     $sth->execute(array(':type' => $type));
     $result = $sth->fetchAll();

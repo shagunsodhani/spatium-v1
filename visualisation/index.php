@@ -52,7 +52,18 @@
                 <?php include 'sidebar.php';
                 ?>
                 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-                    <h4 class="page-header">Demo</h4>
+                    <h4 class="page-header">
+		    	        <div class="btn-group">
+		    	            <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+    			                Size of Co-location <span class="caret"></span>
+  			                </button>
+  			                <ul class="dropdown-menu" role="menu">
+    			                <li><a href="index.php?type=<?php echo $type?>&size=1">1</a></li>
+    			                <li><a href="index.php?type=<?php echo $type?>&size=2">2</a></li>
+                                <li><a href="index.php?type=<?php echo $type?>&size=3">3</a></li>
+  			                </ul>
+		                </div>
+		            </h4>
                     <div class="row placeholders">
                         <div class="col-sm-12" id="map-canvas" >
                             <h4>Label</h4>
