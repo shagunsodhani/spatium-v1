@@ -3,8 +3,11 @@
     
     $ini_array = parse_ini_file("config/config.ini", true);
     $key = $ini_array['map']['key'];
-
-    $command = "/usr/lib/jvm/java-7-openjdk-amd64/bin/java -Xms4096M -Xmx7680M -Dfile.encoding=UTF-8 -classpath /home/precise/spatium/Titan/bin:/home/precise/spatium/Titan/lib/* Visualisation "+$typetyptypecho exec($command);
+    if($type!="CLEAR")
+    {
+    	$command = "/usr/lib/jvm/java-7-openjdk-amd64/bin/java -Xms4096M -Xmx7680M -Dfile.encoding=UTF-8 -classpath /home/precise/spatium/Titan/bin:/home/precise/spatium/Titan/lib/* Visualisation ".$type
+	echo exec($command);
+    }
 
     $conn = connect();
     $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, count FROM `results`";
