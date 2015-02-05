@@ -1,6 +1,7 @@
 import java.util.Iterator;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.tinkerpop.blueprints.Edge;
@@ -10,17 +11,19 @@ import com.tinkerpop.blueprints.Query.Compare;
 
 
 public class EdgeInsertion extends Thread{
-	public TransactionalGraph graph;
+	public TitanTransaction graph;
 	public Vertex vertex;
 	public double distance;
 	
-	public EdgeInsertion(TransactionalGraph graph, Vertex vertex, double distance) {
+	public EdgeInsertion(TitanTransaction graph, Vertex vertex, double distance) {
 		this.graph = graph;
 		this.vertex = vertex;
 		this.distance = distance;
 	}
 	
 	public void run(){
+		
+		vertex.setProperty("visible", 0);
 		Geoshape pointGeoshape = vertex.getProperty("place");
 		double latitude = pointGeoshape.getPoint().getLatitude();
 		double longitude = pointGeoshape.getPoint().getLongitude();
@@ -36,9 +39,9 @@ public class EdgeInsertion extends Thread{
 			if(id_vertex1<id_vertex2){
 				Geoshape pointGeoshape2 = vertex2.getProperty("place");
 				double distance1 = pointGeoshape.getPoint().distance(pointGeoshape2.getPoint());
-				String label = type+"-"+vertex2.getProperty("type");
-				Edge edge = graph.addEdge(null, vertex2,vertex,label);
-				edge.setProperty("distance",distance1);
+				Edge edge = vertex.addEdge("knows",vertex2);
+//				edge.setProperty("distance",distance1);
+				
 //				Graph.edgesMap.put(""+id_vertex1+"-"+id_vertex2, distance1);
 			}
 			

@@ -17,7 +17,7 @@ public class MySql {
 			Properties prop = new Properties();
 			InputStream input = null;
 			try {	 
-				input = new FileInputStream("config/config.properties");
+				input = new FileInputStream("/home/precise/spatium/Titan/config/config.properties");
 				prop.load(input);
 		 
 			} catch (IOException ex) {

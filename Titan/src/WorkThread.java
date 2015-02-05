@@ -1,5 +1,7 @@
 import java.util.Iterator;
 
+import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
+
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
@@ -10,28 +12,43 @@ import com.tinkerpop.blueprints.Query.Compare;
 public class WorkThread extends Thread{
 	
 	public TitanGraph graph;
-	public Vertex vertex;
+	public Geoshape southWest;
+	public Geoshape northEast;
+	public String type;
 	
-	public WorkThread(TitanGraph graph, Vertex vertex){
-		this.graph = graph;
-		this.vertex = vertex;
+	public WorkThread(TitanGraph graph, Geoshape southWest, Geoshape northEast, String type) {
+		// TODO Auto-generated constructor stub
+		this.graph =graph;
+		this.southWest = southWest;
+		this.northEast = northEast;
+		this.type = type;
 	}
+
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		int count = 0;
-		Geoshape pointGeoshape = vertex.getProperty("place");
-		double latitude = pointGeoshape.getPoint().getLatitude();
-		double longitude = pointGeoshape.getPoint().getLongitude();
-		String type = vertex.getProperty("type");
 		
-		for(Iterator<Vertex>iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, 0.2)).has("type",Compare.NOT_EQUAL, type).vertices().iterator()
-				;	iterator2.hasNext();){
-			Vertex vertex2 = iterator2.next();
+//		Database db = new Database();
+//		TitanGraph graph = db.connect();
+		
+		int count = 0;
+		double southWest_lat = southWest.getPoint().getLatitude();
+		double southWest_long = southWest.getPoint().getLongitude();
+		double norhtEast_lat = northEast.getPoint().getLatitude();
+		double northEast_long = northEast.getPoint().getLongitude();
+		Geoshape temp;
+		Vertex vertex = null;
+		for(Iterator<Vertex>iterator  = graph.query().has("place", Geo.WITHIN, Geoshape.box(southWest_lat, southWest_long, norhtEast_lat, northEast_long)).has("type",Compare.EQUAL, type).vertices().iterator()
+				;	iterator.hasNext();){
+			vertex = iterator.next();
 			count++;
 		}
+		if(count!=0){
+			Geoshape point = vertex.getProperty("place");
+			Visualization.typeDist.put(point, count);
+		}
 //		System.out.println("Count = "+count);
-		Graph.countMap.put(vertex.getId().toString(), count);
+//		Graph.countMap.put(vertex.getId().toString(), count);
 	}
 
 }
