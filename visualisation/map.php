@@ -5,7 +5,7 @@
     $key = $ini_array['map']['key'];
     if($type!="CLEAR")
     {
-    	$command = "/usr/lib/jvm/java-7-openjdk-amd64/bin/java -Xms4096M -Xmx7680M -Dfile.encoding=UTF-8 -classpath /home/precise/spatium/Titan/bin:/home/precise/spatium/Titan/lib/* Visualisation ".$type;
+    	$command = "/usr/lib/jvm/java-7-openjdk-amd64/bin/java -Xms4096M -Xmx7680M -Dfile.encoding=UTF-8 -classpath /home/precise/spatium/Titan/bin:/home/precise/spatium/Titan/lib/* Visualization ".$type;
 	echo $command;
 	echo exec($command);
     }
