@@ -17,10 +17,11 @@ count = 0
 dbname = "spatium"+str(count)
 create_db(dbname, sql)
 start_time = time.time()
-sql_populate = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 50"
+sql_populate = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 50000"
 a = Miner(create_table = 1, minPrevalance = 0.2, threshold_distance = 0.2, quiet = 1, dbname = dbname, sql_populate = sql_populate)
 a.initialise()
-a.colocation_2()
+print a.explore_neighbours()
+#a.colocation_2()
 # a.colocation_k(3)
 time_taken = str(time.time() - start_time)
 print "Time taken "
