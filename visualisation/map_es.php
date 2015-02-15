@@ -7,7 +7,9 @@
     $key = $ini_array['map']['key'];
 
     $params = array();
-    $params['hosts'] = array ('192.168.111.180:9200');   
+    $params['hosts'] = array ('192.168.111.180:9200'); 
+
+    echo "print1";  
     $client = new Elasticsearch\Client($params);
 
     $geotools = new \League\Geotools\Geotools();
@@ -25,16 +27,17 @@
         
     $result = $client->search($params); 
     $a = $result['aggregations']['aggs1']['aggs2']['buckets'];
+    // $decoded = $geotools->geohash()->decode($location);
 
-    foreach ($a as $key=>$value)
-    {
-        $location = $value['key'];
-        $count = $value['doc_count'];
-        $decoded = $geotools->geohash()->decode($location);
-        $lat = $decoded->getCoordinate()->getLatitude();
-        $lng = $decoded->getCoordinate()->getLongitude();
-        echo $count." ".$location." ".$lat." ".$lng."\n";
-    }
+    // foreach ($a as $key=>$value)
+    // {
+    //     $location = $value['key'];
+    //     $count = $value['doc_count'];
+    //     $decoded = $geotools->geohash()->decode($location);
+    //     $lat = $decoded->getCoordinate()->getLatitude();
+    //     $lng = $decoded->getCoordinate()->getLongitude();
+    //     echo $count." ".$location." ".$lat." ".$lng."\n";
+    // }
 
 ?>            
 
@@ -90,12 +93,14 @@
 
     <?php
 
-        $count = count($result);
+        $count = count($a);
+        // print $count;
+        // print_r($a);
         if ($count>0)
         {
             for($i = 0; $i<$count-1; $i++)  
             {
-                $value = $result[$i];
+                $value = $a[$i];
                 $location = $value['key'];
                 $decoded = $geotools->geohash()->decode($location);
                 $lat = $decoded->getCoordinate()->getLatitude();
@@ -107,7 +112,7 @@
                 echo "count: ".$counter."},";
                 // echo "count: 1}, ";
             }
-            $value = $result[$count-1];
+            $value = $a[$count-1];
 
             $location = $value['key'];
             $decoded = $geotools->geohash()->decode($location);
