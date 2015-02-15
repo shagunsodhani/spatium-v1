@@ -11,12 +11,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.elasticsearch.bootstrap.Elasticsearch;
+import org.elasticsearch.search.aggregations.support.format.ValueFormatter.GeoHash;
+
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
 import com.sleepycat.je.latch.Latch;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Geoshape.Point;
+import com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex;
 import com.tinkerpop.blueprints.Compare;
 import com.vividsolutions.jts.triangulate.quadedge.Vertex;
 
@@ -24,7 +28,7 @@ import com.vividsolutions.jts.triangulate.quadedge.Vertex;
 public class Visualization {
 	
 	public static Map<Geoshape, Integer> typeDist; 
-	
+		
 	public static void writeDB() throws SQLException{
 		
 		Statement stmt;
@@ -81,11 +85,17 @@ public class Visualization {
 		BufferedReader br = new BufferedReader( new InputStreamReader(System.in));
 		String type = br.readLine();
 //		String type = args[0];
+//		for (int k = 1; k < args.length; k++) {
+//			type = type+" "+args[k];
+//		}
+		
+//		String type = args[0];
 		System.out.println("Type is "+type);
 		
 		Database db = new Database();
 		TitanGraph graph = db.connect();
-		ExecutorService executorService = Executors.newFixedThreadPool(10000);
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		System.out.println("All the threads created successfully");
 				
 		double startLat = 41.644580105,startLong = -87.934324986,endLat = 42.023024908,endLong = -87.524388789;
 		int width = 100, height = 100;
@@ -105,28 +115,14 @@ public class Visualization {
 			}
 		}
 		
+		System.out.println("All the threads are ready to be terminated");
+		
 		executorService.shutdown();
 //		executorService.awaitTermination(120, TimeUnit.SECONDS);
 //		executorService.shutdownNow();
 		while(!executorService.isTerminated()){
 			;
 		}
-		
-//		Iterator it = typeDist.entrySet().iterator();
-//		Geoshape point = null;
-//		  double latitude, longitude;
-//		  int count;
-//		  
-//		  while (it.hasNext())
-//		  {
-//		        Map.Entry pairs = (Map.Entry)it.next();
-//		        point = (Geoshape)pairs.getKey();
-//		        latitude = point.getPoint().getLatitude();
-//		        longitude = point.getPoint().getLongitude();
-//		        count = (Integer)pairs.getValue();
-//		        System.out.println(latitude+" "+longitude+" "+count);
-//		  }
-		   	
 				
 		System.out.println("All the threads terminated successfully");		
 		

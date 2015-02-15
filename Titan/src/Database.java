@@ -75,6 +75,7 @@ public class Database {
 		config.addProperty("storage.keyspace", prop.getProperty("storage.keyspace"));
 		config.addProperty("storage.batch-loading",prop.getProperty("storage.batch-loading"));
 		config.addProperty("ids.block-size",prop.getProperty("ids.block-size"));
+		config.addProperty("storage.read-time",prop.getProperty("storage.read-time"));
 //		System.out.proprintln(config.getProperties("storage.buffer-size"));
 		
 		/*
@@ -84,6 +85,10 @@ public class Database {
 		config.addProperty("index.search.backend", prop.getProperty("storage.index.search.backend"));
 		config.addProperty("index.search.hostname", prop.getProperty("storage.index.search.hostname"));
 		config.addProperty("index.search.client-only",prop.getProperty("storage.index.search.client-only"));
+		config.addProperty("index.search.geohash", prop.getProperty("storage.index.search.geohash"));
+		config.addProperty("index.geohash_precision", prop.getProperty("storage.index.geohash_precision"));
+		config.addProperty("index.geohash_prefix", prop.getProperty("storage.index.geohash_prefix"));
+		
 
 		TitanGraph g = TitanFactory.open(config);
 //		System.out.println("Instantiated Titan Graph Instance");

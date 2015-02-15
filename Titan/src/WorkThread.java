@@ -2,6 +2,7 @@ import java.util.Iterator;
 
 import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
 
+import com.esotericsoftware.minlog.Log.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
@@ -28,9 +29,6 @@ public class WorkThread extends Thread{
 	public void run() {
 		// TODO Auto-generated method stub
 		
-//		Database db = new Database();
-//		TitanGraph graph = db.connect();
-		
 		int count = 0;
 		double southWest_lat = southWest.getPoint().getLatitude();
 		double southWest_long = southWest.getPoint().getLongitude();
@@ -47,8 +45,8 @@ public class WorkThread extends Thread{
 			Geoshape point = vertex.getProperty("place");
 			Visualization.typeDist.put(point, count);
 		}
-//		System.out.println("Count = "+count);
-//		Graph.countMap.put(vertex.getId().toString(), count);
+//		long threadId = Thread.currentThread().getId();
+//        System.out.println("Thread # " + threadId + " is doing this task");
 	}
 
 }

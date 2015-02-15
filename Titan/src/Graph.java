@@ -74,20 +74,28 @@ public class Graph {
 		
 		PropertyKey typeKey = mgmt.makePropertyKey("type").dataType(String.class).make();
 		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
-		PropertyKey approxplaceKey = mgmt.makePropertyKey("approxplace").dataType(Geoshape.class).make();
+//		PropertyKey approxplaceKey = mgmt.makePropertyKey("approxplace").dataType(Geoshape.class).make();
+		
+				
 //		PropertyKey placeKeyTSI = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 //		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Timestamp.class).make();
+		
 		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
 		EdgeLabelMaker label = mgmt.makeEdgeLabel("knows");
 		label.make();
 		
 		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildCompositeIndex();
+//		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKeyTSI).buildCompositeIndex();
-		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
-		mgmt.buildIndex("approxplace", Vertex.class).addKey(approxplaceKey).buildMixedIndex("search");
+//		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
+		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).buildMixedIndex("search");
+		
+//		mgmt.buildIndex("approxplace", Vertex.class).addKey(approxplaceKey).buildMixedIndex("search");
+		
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
-		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
+//		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
+//		mgmt.buildIndex("distance", Vertex.class).addKey(distanceKey).buildMixedIndex("search");
 		mgmt.buildIndex("visible", Vertex.class).addKey(visibleKey).buildCompositeIndex();
 		mgmt.commit();
 		long time_2 = System.currentTimeMillis();
@@ -137,15 +145,17 @@ public class Graph {
 	 		     Vertex node = graph.addVertex(id);
 	 		     node.setProperty("type", type);
 	 		     node.setProperty("place", place);
-	 		     node.setProperty("approxplace", approxplace);
+//	 		     node.setProperty("approxplace", approxplace);
 	 		     node.setProperty("visible", 1);
+	 		     node.setProperty("distance", 2.345);
 	 		     count++;
+//	 		     node.getProperty("place");
 	 		     if(count%100000 == 0)
 	 		     {
 	 		    	time_4 = System.currentTimeMillis();
 	 		    	 System.out.println("Total vertices added till now = "+count+" in "+(time_4-time_3)+" ms.");
 	 		    	 time_3 = time_4;
-//	 		    	 graph.commit();
+	 		    	 graph.commit();
 	 		     }
 		      }                                             
 		    long time_2 = System.currentTimeMillis();
@@ -672,6 +682,7 @@ public class Graph {
 	 * @throws Exception 
 	 */
 	public static void main(String[] args) throws Exception {
+		
 		// TODO Auto-generated method stub
 		Graph.countMap = new ConcurrentHashMap<String,Integer>();
 		Graph.edgesMap = new ConcurrentHashMap<String,Double>();
@@ -686,27 +697,29 @@ public class Graph {
 		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
-		graph = clearGraph(db, graph);
+//		graph = clearGraph(db, graph);
 			
 		// Step 2 : Build Schema
-		build_schema(graph);
+//		build_schema(graph);
+		
 //		iterateEdges(graph);
 
 		// Step 3 : Initialize Graph Database
 
 		TitanTransaction graph1 = graph.newTransaction();
 		
-//		InitializeGraph(graph,1000000);
+//		InitializeGraph(graph,1000);
+		
 //		addEdges(graph, 0.2);
 //		iterateEdges(graph);		
 //		graph.commit();
 		
 		
-		InitializeGraph(graph1,100000);
+//		InitializeGraph(graph1,100000);
 		System.out.println("Graph initialized");
-//		addEdgesMultiThread(graph1, 0.2);
+		addEdgesMultiThread(graph1, 0.2);
 
-//		iterateEdges(graph1);
+		iterateEdges(graph1);
 		graph1.commit();
 
 		/*
