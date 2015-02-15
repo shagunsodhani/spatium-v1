@@ -3,10 +3,14 @@
     require_once("db.php");
     $type = "clear";
     $size = 1;
+    $precision = 6;
     if(isset($_GET['type']))
         $type = $_GET['type'];
     if(isset($_GET['size']))
         $size = $_GET['size'];
+    if(isset($_GET['precision']))
+        $precision = $_GET['precision'];
+    // var_dump($_GET);
 
 ?>
 <!DOCTYPE html>
@@ -63,6 +67,19 @@
                                 <li><a href="index.php?type=<?php echo $type?>&size=3">3</a></li>
   			                </ul>
 		                </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                Precision <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" role="menu">
+                                <li><a href="index.php?type=<?php echo $type?>&precision=4">39.1km x 19.5km</a></li>
+                                <li><a href="index.php?type=<?php echo $type?>&precision=5">4.9km x 4.9km</a></li>
+                                <li><a href="index.php?type=<?php echo $type?>&precision=6">1.2km x 609.4m</a></li>
+                                <li><a href="index.php?type=<?php echo $type?>&precision=7">152.9m x 152.4m</a></li>
+                                <li><a href="index.php?type=<?php echo $type?>&precision=8">38.2m x 19m</a></li>
+                                <li><a href="index.php?type=<?php echo $type?>&precision=8">4.8m x 4.8m</a></li>
+                            </ul>
+                        </div>
 		            </h4>
                     <div class="row placeholders">
                         <div class="col-sm-12" id="map-canvas" >

@@ -9,20 +9,22 @@
     $params = array();
     $params['hosts'] = array ('192.168.111.180:9200'); 
 
-    echo "print1";  
+    // echo "print1";  
     $client = new Elasticsearch\Client($params);
 
     $geotools = new \League\Geotools\Geotools();
     
     // $type = "THEFT";    
     // $size = 30;
-    $precision = 6;
-    
+    // $precision = 6;
+    // echo $type;
+    // echo $precision;
+    // echo (int)$precision;
     $params = array();
     $params['index'] = 'titan';
     $params['body']['aggs']['aggs1']['filter']['query']['match']['1l1'] = $type;
     $params['body']['aggs']['aggs1']['aggs']['aggs2']['geohash_grid']['field'] = '35x';
-    $params['body']['aggs']['aggs1']['aggs']['aggs2']['geohash_grid']['precision'] = $precision;
+    $params['body']['aggs']['aggs1']['aggs']['aggs2']['geohash_grid']['precision'] = (int)$precision;
     $params['body']['size'] = 0;
         
     $result = $client->search($params); 
@@ -51,7 +53,7 @@
     // map options,
     var myOptions = 
     {
-        zoom: 10,
+        zoom: 11,
         center: myLatlng
     };
     // standard map
