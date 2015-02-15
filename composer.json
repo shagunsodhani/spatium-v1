@@ -1,5 +1,6 @@
 {
     "require": {
-        "league/geotools": "0.4.0"
+        "league/geotools": "0.4.0",
+        "elasticsearch/elasticsearch": "~1.0"
     }
 }
