@@ -1,6 +1,10 @@
 <?php
 
-    
+    require '../vendor/autoload.php';
+    $geotools       = new \League\Geotools\Geotools();
+
+    $decoded = $geotools->geohash()->decode('spey61y');
+    	    
     $ini_array = parse_ini_file("config/config.ini", true);
     $key = $ini_array['map']['key'];
     if($type!="CLEAR")
