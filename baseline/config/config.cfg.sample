@@ -1,0 +1,17 @@
+#mysql
+[app-name]
+host =
+user =
+passwd =
+db =
+charset = utf8
+use_unicode = True
+map_key = 
+socrata_key = 
+
+#titan
+[app-name]
+host = 
+user = 
+passwd = 
+map_key = 

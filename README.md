@@ -1,21 +1,20 @@
 spatium
 =======
 
-Spatial Co-location Rule 
+Spatial Co-location Rule
 
-Co-location Miner Algorithm Implementation proposed by [1]
+Spatium is a part of our B.Tech Project (Final Year Project) at [Indian Institue of Technology, Roorkee](http://www.iitr.ac.in/).
 
+Our problem statement reads **Mining colocation rules given a spatial dataset using Graph Database**. Over the years numerous approaches have been proposed for this problem albeit with their own limitations. Furthermore major research has been limited to relational databases. We intend to leverage *graph database* to mine these rules more efficiently. Another aspect we would explore is using *MapReduce paradigm*.
 
-[1] [Discovering Spatial Co-location Patterns : A Summary of Results](http://www.spatial.cs.umn.edu/paper_ps/sstd01.pdf) 
-- for K = 2 no need of Apriori Function
-- for K > 2 first generate candidate co-locations using apriori property and then find prevalent co-locations using join and pruning using min_prev
+To get a better understanding of the problem and understand the bottlenecks in traditional Join-based approach for co-location rule mining, we implemented Co-location rule miner algorithm as proposed by Shashi Shekhar et al. [Discovering Spatial Co-location Patterns : A Summary of Results](http://www.spatial.cs.umn.edu/paper_ps/sstd01.pdf) in python.
 
-Next task is to port Join Based Algo on Graph Database (Titan) 
+Next task is to port the Join-Based Algorithm to a graph database. We plan on using [Titan](http://thinkaurelius.github.io/titan/). 
 
-We have use real world crime data of Chicago city, USA from [10] for our experiments. The data consists of crime incidents with details including location information. The idea is to predict which types of crime are likely to co-occur based on the past history of crime incidents at various locations in the city. 
+We are using crime data for City of Chicago, USA. It can be accessed [here](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-present/ijzp-q8t2). 
 
-[Initial Survey Report] (https://sites.google.com/site/sanketmehtaiitr/spatium)
+Stage - I
+For more technical details, go through our [Initial Survey Report](https://sites.google.com/site/sanketmehtaiitr/spatium). Also go through our [demo](http://shagunsodhani.in/spatium/demo.html) and [presentation](http://slides.com/shagun/spatium).
 
-[Demo] (http://shagunsodhani.in/spatium)
-
-[Presentation] (http://slides.com/shagun/spatium)
+Stage - II
+We are using [Titan](http://thinkaurelius.github.io/titan/): Distributed Graph Database for our project. We have setup a titan with cassandra as a backend stroage and elasticsearch as external indexing technique. To get better understanding about Titan, we conducted several exteriments, (compared Titan Standard Index with Elasticsearch, implemented multi-threaded version of neighbourhood exploration, etc). For more details, go through our [Titan Setup and its exploration Report](https://sites.google.com/site/sanketmehtaiitr/spatium). 
