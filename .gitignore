@@ -129,5 +129,4 @@ data/
 
 # composer
 vendor/
-composer.json
 composer.lock
