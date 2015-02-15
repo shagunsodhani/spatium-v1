@@ -1,21 +1,40 @@
 <?php
-    	    
+    
+    
+    require '../vendor/autoload.php';
+
     $ini_array = parse_ini_file("config/config.ini", true);
     $key = $ini_array['map']['key'];
-    if($type!="CLEAR")
-    {
-    	$command = "/usr/lib/jvm/java-7-openjdk-amd64/bin/java -Xms4096M -Xmx7680M -Dfile.encoding=UTF-8 -classpath /home/precise/spatium/Titan/bin:/home/precise/spatium/Titan/lib/* Visualization ".$type;
-	   // echo $command;
-	   // echo exec($command);
-    }
 
-    $conn = connect();
-    $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, count FROM `results`";
-    // $sql = "SELECT ROUND(longitude,3) as lng, ROUND(latitude,3) as lat, COUNT(*) as count FROM `dataset` WHERE primary_type = :type GROUP BY lat, lng LIMIT 0, 1000";
-    $sth = $conn->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));
-    $sth->execute(array(':type' => $type));
-    $result = $sth->fetchAll();
-    // $conn = null;
+    $params = array();
+    $params['hosts'] = array ('192.168.111.180:9200');   
+    $client = new Elasticsearch\Client($params);
+
+    $geotools = new \League\Geotools\Geotools();
+    
+    // $type = "THEFT";    
+    // $size = 30;
+    $precision = 6;
+    
+    $params = array();
+    $params['index'] = 'titan';
+    $params['body']['aggs']['aggs1']['filter']['query']['match']['1l1'] = $type;
+    $params['body']['aggs']['aggs1']['aggs']['aggs2']['geohash_grid']['field'] = '35x';
+    $params['body']['aggs']['aggs1']['aggs']['aggs2']['geohash_grid']['precision'] = $precision;
+    $params['body']['size'] = 0;
+        
+    $result = $client->search($params); 
+    $a = $result['aggregations']['aggs1']['aggs2']['buckets'];
+
+    foreach ($a as $key=>$value)
+    {
+        $location = $value['key'];
+        $count = $value['doc_count'];
+        $decoded = $geotools->geohash()->decode($location);
+        $lat = $decoded->getCoordinate()->getLatitude();
+        $lng = $decoded->getCoordinate()->getLongitude();
+        echo $count." ".$location." ".$lat." ".$lng."\n";
+    }
 
 ?>            
 
@@ -77,15 +96,28 @@
             for($i = 0; $i<$count-1; $i++)  
             {
                 $value = $result[$i];
-                echo " {lat: ".$value['lat'].", ";
-                echo "lng: ".$value['lng'].", ";
-                echo "count: ".$value['count']."},";
+                $location = $value['key'];
+                $decoded = $geotools->geohash()->decode($location);
+                $lat = $decoded->getCoordinate()->getLatitude();
+                $lng = $decoded->getCoordinate()->getLongitude();
+                $counter = $value['doc_count'];
+
+                echo " {lat: ".$lat.", ";
+                echo "lng: ".$lng.", ";
+                echo "count: ".$counter."},";
                 // echo "count: 1}, ";
             }
             $value = $result[$count-1];
-            echo " {lat: ".$value['lat'].", ";
-            echo "lng: ".$value['lng'].", ";
-            echo "count: ".$value['count']."}";
+
+            $location = $value['key'];
+            $decoded = $geotools->geohash()->decode($location);
+            $lat = $decoded->getCoordinate()->getLatitude();
+            $lng = $decoded->getCoordinate()->getLongitude();
+            $counter = $value['doc_count'];
+
+            echo " {lat: ".$lat.", ";
+            echo "lng: ".$lng.", ";
+            echo "count: ".$counter."}";
         }
     ?> 
     ]};
