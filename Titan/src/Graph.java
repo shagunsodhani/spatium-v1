@@ -1,6 +1,3 @@
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
@@ -9,23 +6,27 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
-import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
-
-import cern.colt.matrix.doublealgo.Statistic;
+//import java.io.InputStream;
+//import java.util.Properties;
+//import java.util.concurrent.TimeUnit;
+//import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
+//import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
+//import cern.colt.matrix.doublealgo.Statistic;
+//import com.thinkaurelius.titan.cograph.commit();re.Order;
+//import com.thinkaurelius.titan.core.TitanGraphTransaction;
+//import com.thinkaurelius.titan.core.attribute.Timestamp;
+//import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
+//import com.tinkerpop.gremlin.java.GremlinPipeline;
 
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
-import com.thinkaurelius.titan.core.Order;
+
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanGraphTransaction;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
@@ -34,23 +35,15 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Query.Compare;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.gremlin.java.GremlinPipeline;
 
-/**
- * @author precise
- *
- */
 @SuppressWarnings("deprecation")
 public class Graph {
 	
 	public static Map<String, Integer> countMap;
-	
 	public static Map<String,Integer> typeFrequency;
-	
 	public static Map<String, Double> edgesMap;
 	
 	public static TitanGraph clearGraph(Database db, TitanGraph graph){
@@ -78,9 +71,9 @@ public class Graph {
 		
 				
 //		PropertyKey placeKeyTSI = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
-//		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Timestamp.class).make();
+		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Long.class).make();
 		
-		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
+//		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
 		EdgeLabelMaker label = mgmt.makeEdgeLabel("knows");
 		label.make();
@@ -89,7 +82,7 @@ public class Graph {
 //		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKeyTSI).buildCompositeIndex();
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
-		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).buildMixedIndex("search");
+		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).addKey(timeKey).buildMixedIndex("search");
 		
 //		mgmt.buildIndex("approxplace", Vertex.class).addKey(approxplaceKey).buildMixedIndex("search");
 		
@@ -147,7 +140,7 @@ public class Graph {
 	 		     node.setProperty("place", place);
 //	 		     node.setProperty("approxplace", approxplace);
 	 		     node.setProperty("visible", 1);
-	 		     node.setProperty("distance", 2.345);
+//	 		     node.setProperty("distance", 2.345);
 	 		     count++;
 //	 		     node.getProperty("place");
 	 		     if(count%100000 == 0)
@@ -677,13 +670,8 @@ public class Graph {
 		System.out.print("Time excluding initial query "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
 	}
 	
-	/**
-	 * @param args
-	 * @throws Exception 
-	 */
 	public static void main(String[] args) throws Exception {
 		
-		// TODO Auto-generated method stub
 		Graph.countMap = new ConcurrentHashMap<String,Integer>();
 		Graph.edgesMap = new ConcurrentHashMap<String,Double>();
 		
@@ -697,38 +685,27 @@ public class Graph {
 		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
-//		graph = clearGraph(db, graph);
+		graph = clearGraph(db, graph);
 			
 		// Step 2 : Build Schema
-//		build_schema(graph);
+		build_schema(graph);
 		
-//		iterateEdges(graph);
+		// IterateEdges(graph);
 
 		// Step 3 : Initialize Graph Database
-
-		TitanTransaction graph1 = graph.newTransaction();
+		// TitanTransaction graph1 = graph.newTransaction();
 		
-//		InitializeGraph(graph,1000);
+		InitializeGraph(graph,1000);
 		
-//		addEdges(graph, 0.2);
-//		iterateEdges(graph);		
-//		graph.commit();
-		
-		
-//		InitializeGraph(graph1,100000);
 		System.out.println("Graph initialized");
-		addEdgesMultiThread(graph1, 0.2);
 
-		iterateEdges(graph1);
-		graph1.commit();
-
-		/*
 		// Step 4 : Generate stats
 		stats(graph);
-		/*
+		
 		// Step 5 : Build edges for distance threshold = 0.2
-//		addEdges(graph, 0.2);
-//		iterateEdges(graph);
+		addEdges(graph, 0.2);
+		iterateEdges(graph);
+		graph.commit();
 			
 		date = new Date();
 		System.out.println(dateFormat.format(date));
@@ -736,10 +713,10 @@ public class Graph {
 		// Step 6 : Explore neighbors for distance threshold = 0.2 using Edge Traversal
 		exploreNeighboursEdge(graph, 0.2);
 		
-//		 Step 7 : Explore neighbors for distance threshold = 0.2 using Geo.WITHIN
-//		exploreNeighboursGeo(graph,"LIQUOR LAW VIOLATION", 0.2);
-		 */
+		// Step 7 : Explore neighbors for distance threshold = 0.2 using Geo.WITHIN
 		
+		//		exploreNeighboursGeo(graph,"LIQUOR LAW VIOLATION", 0.2);
+			
 //		Graph.countMap = new ConcurrentHashMap<String,Integer>();
 
 //		exploreNeighboursGeo(graph, 0.2);
@@ -758,8 +735,6 @@ public class Graph {
 		System.out.println(pipe.count());
 */
 		
-		db.close(graph);
-		
+		db.close(graph);	
 	}
-
 }

@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
 
-
 public class MySql {
 
 	    static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
@@ -17,7 +16,9 @@ public class MySql {
 			Properties prop = new Properties();
 			InputStream input = null;
 			try {	 
-				input = new FileInputStream("/home/precise/spatium/Titan/config/config.properties");
+//				input = new FileInputStream("/home/precise/spatium/Titan/config/config.properties");
+				input = new FileInputStream("config/config.properties");
+//				input = new FileInputStream("../config/config.properties");
 				prop.load(input);
 		 
 			} catch (IOException ex) {
@@ -31,19 +32,19 @@ public class MySql {
 						}
 					}
 				}
+			
 			USER = prop.getProperty("mysql.user");
 			PASS = prop.getProperty("mysql.passwd");
 			HOSTNAME = prop.getProperty("mysql.hostname");
 			DATABASE = prop.getProperty("mysql.database");
-			//DB_URL = jdbc:mysql://hostname/database_name
 			DB_URL = DB_URL+HOSTNAME+"/"+DATABASE;
 			   
 			Connection conn = null;
 			try{
 			      Class.forName("com.mysql.jdbc.Driver");
-//			      System.out.println("Connecting to a selected database..."+DB_URL);
+			      System.out.println("Connecting to a selected database..."+DB_URL);
 			      conn = DriverManager.getConnection(DB_URL, USER, PASS);
-//			      System.out.println("Connected database successfully...");
+			      System.out.println("Connected database successfully...");
 			      return conn;
 			   }catch(SQLException se){
 			      //Handle errors for JDBC
