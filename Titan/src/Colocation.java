@@ -1,4 +1,6 @@
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Edge;
@@ -9,6 +11,8 @@ public class Colocation {
 	
 	public static Database db = new Database();
 	public static TitanGraph graph = db.connect();
+	public static HashMap<String, Integer> total_count = new HashMap<String, Integer>(); 
+	public double PI_threshold = 1;
 	
 	public static void L1(){
 		/*
@@ -22,6 +26,14 @@ public class Colocation {
 
 		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator.hasNext();) {
 				Vertex vertex = iterator.next();
+				String type = vertex.getProperty("type");
+				if (total_count.containsKey(type))
+				{
+					total_count.put(type, total_count.get(type)+1);
+				}
+				else {
+					total_count.put(type, 1);
+				}
 				System.out.println(counter+" : "+"Id = "+vertex.getId()+" Place = "+vertex.getProperty("place")+" Type = "+vertex.getProperty("type")+" Visible = "+vertex.getProperty("visible"));
 				counter++;
 			}
@@ -33,6 +45,7 @@ public class Colocation {
 		 * Generate colocations of size 2
 		 * Iterate over all edges of the graph
 		 */
+		
 		System.out.println("Generating colocations of size 2.\n");
 		int counter = 0;
 		//could lead to buffer-overflow
@@ -45,7 +58,12 @@ public class Colocation {
 		System.out.println("Total no. of colocations of size 2  are = "+counter);
 		
 	}
-		
+	
+	public static void Lk(){
+		/*
+		 * Generate colocation of size k
+		 */
+	}
 	public static void main(String[] args) {
 		
 		L2();
