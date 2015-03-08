@@ -22,9 +22,11 @@ import java.util.concurrent.Executors;
 //import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
 //import com.tinkerpop.gremlin.java.GremlinPipeline;
 
+
+import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
+
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
-
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
@@ -73,7 +75,7 @@ public class Graph {
 //		PropertyKey placeKeyTSI = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Long.class).make();
 		
-//		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
+		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
 		EdgeLabelMaker label = mgmt.makeEdgeLabel("knows");
 		label.make();
@@ -202,74 +204,44 @@ public class Graph {
 	    
 	}
 	
-	public static void addEdges(TitanGraph graph, double distance){
+	public static double addEdges(TitanGraph graph, double distance) {
+		/*
+		 * Method to compute vertices in the nearby region as specified by 'distance' argument and add edges between them. 
+		 */
 		
-		double time =0,time_1,time_2, time_3, time_4;
-		int count_edges= 0 ;
-		time_3 = System.currentTimeMillis();
-		
-		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator.hasNext();) {
-			
+		int counter = 0;
+		double time_1 = System.currentTimeMillis();
+		for (Iterator<Vertex> iterator = graph.query().vertices().iterator(); iterator.hasNext();) {
 			Vertex vertex = iterator.next();
 			vertex.setProperty("visible", 0);
-			long id_vertex1 = Long.parseLong(vertex.getId().toString());
-			
 			Geoshape pointGeoshape = vertex.getProperty("place");
 			double latitude = pointGeoshape.getPoint().getLatitude();
 			double longitude = pointGeoshape.getPoint().getLongitude();
-			String type = vertex.getProperty("type");
+			// counter1 variable stores total no. of vertices satisfying Geo.WITHIN or its no. of edges
+			int counter1 = 0;
 			
-			time_1 = System.currentTimeMillis();
-			
-			
-			
-			for(Iterator<Vertex>iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator()
-					;	iterator2.hasNext();){
+			for (Iterator <Vertex> iterator2 = graph.query().has("visible",Compare.EQUAL,1).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator(); iterator2.hasNext();) 
+			{
 				Vertex vertex2 = iterator2.next();
-				long id_vertex2 = Long.parseLong(vertex2.getId().toString());
+				Geoshape pointGeoshape2 = vertex2.getProperty("place");
+				Edge edge = vertex.addEdge("knows", vertex2);
+				edge.setProperty("distance",pointGeoshape.getPoint().distance(pointGeoshape2.getPoint()));
+				System.out.println(edge.getProperty("distance"));
+				double latitude2 = pointGeoshape2.getPoint().getLatitude();
+				double longitude2 = pointGeoshape2.getPoint().getLongitude();
+				System.out.println(latitude);
+				System.out.println(longitude);
+				System.out.println(latitude2);
+				System.out.println(longitude2);
+				System.out.println("\n");
 				
-				if(id_vertex1<id_vertex2){
-					Geoshape pointGeoshape2 = vertex2.getProperty("place");
-					double distance1 = pointGeoshape.getPoint().distance(pointGeoshape2.getPoint());
-		//				String label = type+"-"+vertex2.getProperty("type");
-		//				String label = id_vertex1+"-"+id_vertex2;
-		//				Edge edge = graph.addEdge(null,vertex2,vertex,label);
-		//				edge.setProperty("distance",distance1);\
-//					Vertex vertex1 = graph.getVertex(vertex_ids[0]);
-//			        Vertex vertex2 = graph.getVertex(vertex_ids[1]);
-			        vertex.addEdge("knows", vertex2);
-			        count_edges++;
-//					Graph.edgesMap.put(""+id_vertex1+"-"+id_vertex2, distance1);
-				}
+				counter1++;
 			}
-			
-			
-			
-			
-//			for (Iterator <Vertex> iterator2 = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).has("visible",Compare.EQUAL,1).vertices().iterator();
-//					iterator2.hasNext();) {
-//				Vertex vertex2 = iterator2.next();
-////				System.out.println(counter+" : "+"Id = "+vertex2.getId()+" Place = "+vertex2.getProperty("place")+" Type = "+vertex2.getProperty("type"));
-//				
-//				//Get other point
-//				Geoshape pointGeoshape2 = vertex2.getProperty("place");
-////				String labelString = vertex2.getProperty("type")+"-"+type;
-//				
-////				Add edge between instances of two different types with label as type1-type2 eg:BATTERY-NARCOTICS only if NARCOTICS-BATTERY edge is not present
-////			    vertex.query().has("id", vertex2.getId()).direction(Direction.BOTH).has(labelString, vertex2).vertices();
-//				Edge edge = vertex.addEdge(type+"-"+vertex2.getProperty("type"), vertex2);
-//					
-////				Set property for edge as distance between two vertices
-//				edge.setProperty("distance",pointGeoshape.getPoint().distance(pointGeoshape2.getPoint()));
-//				count_edges++;
-//			}
-			
-			time_2 = System.currentTimeMillis();
-			time += (time_2-time_1);
+			counter += counter1;			
 		}
-		time_4 = System.currentTimeMillis();
-	    System.out.println(" Total time required for insertion of "+count_edges+" edges = "+time+" : Avg. Time = "+(time/count_edges));
-		System.out.println(" Total time for whole method = "+(time_4-time_3));
+		double time_2 = System.currentTimeMillis();
+		System.out.println("Total no. of edges added are = "+counter+" in "+(time_2-time_1)+ "ms.\n");
+		return (time_2-time_1);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -312,6 +284,8 @@ public class Graph {
 					
 //				Set property for edge as distance between two vertices
 				edge.setProperty("distance",pointGeoshape.getPoint().distance(pointGeoshape2.getPoint()));
+				System.out.println(edge.getProperty("distance"));
+				System.out.println("shagun");
 				counter1++;
 			}
 //			System.out.println("Vertices in nearby locality are : "+counter1+"\n");
@@ -695,7 +669,7 @@ public class Graph {
 		// Step 3 : Initialize Graph Database
 		// TitanTransaction graph1 = graph.newTransaction();
 		
-		InitializeGraph(graph,1000);
+		InitializeGraph(graph,100);
 		
 		System.out.println("Graph initialized");
 
@@ -704,14 +678,14 @@ public class Graph {
 		
 		// Step 5 : Build edges for distance threshold = 0.2
 		addEdges(graph, 0.2);
-		iterateEdges(graph);
-		graph.commit();
-			
-		date = new Date();
-		System.out.println(dateFormat.format(date));
-		
-		// Step 6 : Explore neighbors for distance threshold = 0.2 using Edge Traversal
-		exploreNeighboursEdge(graph, 0.2);
+//		iterateEdges(graph);
+//		graph.commit();
+//			
+//		date = new Date();
+//		System.out.println(dateFormat.format(date));
+//		
+//		// Step 6 : Explore neighbors for distance threshold = 0.2 using Edge Traversal
+//		exploreNeighboursEdge(graph, 0.2);
 		
 		// Step 7 : Explore neighbors for distance threshold = 0.2 using Geo.WITHIN
 		
