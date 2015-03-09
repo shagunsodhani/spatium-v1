@@ -34,8 +34,8 @@ public class TypeDistribution {
 		public static void writeDB() throws SQLException{
 			
 			Statement stmt;
-			
-			Connection conn = (Connection) MySql.connect();
+			MySql mySql = new MySql();
+			Connection conn = (Connection) mySql.connect();
 			if (conn == null) {
 				System.out.println("Connection Error!!");
 			}

@@ -9,10 +9,15 @@ import java.util.Properties;
 public class MySql {
 
 	    static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-		static String DB_URL = "jdbc:mysql://";
-	    static String USER,PASS,HOSTNAME,DATABASE,TABLE;		
-		
-		public static Connection connect() {			   
+		static String DB_URL;
+	    static String USER,PASS,HOSTNAME,DATABASE,TABLE;
+	    		
+		public MySql(){
+			this.DB_URL = "jdbc:mysql://";
+//			connect();
+		}	    
+	    
+	    public Connection connect() {			   
 			Properties prop = new Properties();
 			InputStream input = null;
 			try {	 
