@@ -6,28 +6,23 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-//import java.io.InputStream;
-//import java.util.Properties;
-//import java.util.concurrent.TimeUnit;
-//import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
-//import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
-//import cern.colt.matrix.doublealgo.Statistic;
-//import com.thinkaurelius.titan.cograph.commit();re.Order;
-//import com.thinkaurelius.titan.core.TitanGraphTransaction;
-//import com.thinkaurelius.titan.core.attribute.Timestamp;
-//import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
-//import com.tinkerpop.gremlin.java.GremlinPipeline;
-
+import javax.management.relation.Relation;
 
 import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
 
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.attribute.Geo;
@@ -47,6 +42,9 @@ public class Graph {
 	public static Map<String, Integer> countMap;
 	public static Map<String,Integer> typeFrequency;
 	public static Map<String, Double> edgesMap;
+	public static HashMap<String, String> enCoding;
+	public static HashMap<String, String> deCoding;
+	
 	
 	public static TitanGraph clearGraph(Database db, TitanGraph graph){
 		/**
@@ -69,25 +67,32 @@ public class Graph {
 		
 		PropertyKey typeKey = mgmt.makePropertyKey("type").dataType(String.class).make();
 		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
-//		PropertyKey approxplaceKey = mgmt.makePropertyKey("approxplace").dataType(Geoshape.class).make();
-		
-				
 //		PropertyKey placeKeyTSI = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
-		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Long.class).make();
+		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Integer.class).make();
 		
 		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
-		EdgeLabelMaker label = mgmt.makeEdgeLabel("knows");
-		label.make();
+		
+		// Making all possible edge labels
+		Iterator iterator = enCoding.entrySet().iterator();
+		while(iterator.hasNext()){
+			Entry x = (Entry) iterator.next();
+			String type1 = (String) x.getValue();
+			Iterator iterator2 = enCoding.entrySet().iterator();
+			while(iterator2.hasNext()){
+				Entry y = (Entry)iterator2.next();
+				String type2 = (String) y.getValue();
+				EdgeLabel label = mgmt.makeEdgeLabel(type1+"-"+type2).multiplicity(Multiplicity.MULTI).make();
+//				mgmt.buildEdgeIndex(label, type1+"-"+type2, Direction.BOTH,);
+			}			
+		}		
 		
 		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildCompositeIndex();
 //		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKeyTSI).buildCompositeIndex();
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
 		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).addKey(timeKey).buildMixedIndex("search");
-		
-//		mgmt.buildIndex("approxplace", Vertex.class).addKey(approxplaceKey).buildMixedIndex("search");
-		
+
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
 //		mgmt.buildIndex("distance", Vertex.class).addKey(distanceKey).buildMixedIndex("search");
@@ -106,8 +111,8 @@ public class Graph {
 		int MAX_LIMIT = limit;
 		
 		Statement stmt;
-		
-		Connection conn = (Connection) MySql.connect();
+		MySql mySql = new MySql();
+		Connection conn = (Connection) mySql.connect();
 		if (conn == null) {
 			System.out.println("Connection Error!!");
 		}else{
@@ -126,25 +131,29 @@ public class Graph {
 	 		  int count = START;
 	 		  long time_3 = System.currentTimeMillis();
 	 		  long time_4;
+	 		  int tym;
+	 		  
 		      while(rs.next()){
 
 		    	 id  = rs.getInt("id");
 		         latitude = rs.getDouble("latitude");
 		         longitude = rs.getDouble("longitude");
 		         type = rs.getString("primary_type");
-		         
+		         tym = rs.getInt("date");
 //		         System.out.println(id+" "+latitude+" "+longitude+" "+type);
 
 		         Geoshape place = Geoshape.point(latitude, longitude);
 	 		     Geoshape approxplace = Geoshape.point((double)Math.round(latitude*100)/100, (double)Math.round(longitude*100)/100);  
 	 		     Vertex node = graph.addVertex(id);
-	 		     node.setProperty("type", type);
+	 		     // Note here that new type i.e, encoded type is added instead of original type
+	 		     node.setProperty("type", enCoding.get(type));
 	 		     node.setProperty("place", place);
-//	 		     node.setProperty("approxplace", approxplace);
 	 		     node.setProperty("visible", 1);
+	 		     node.setProperty("time", tym);
 //	 		     node.setProperty("distance", 2.345);
 	 		     count++;
 //	 		     node.getProperty("place");
+	 		     
 	 		     if(count%100000 == 0)
 	 		     {
 	 		    	time_4 = System.currentTimeMillis();
@@ -219,13 +228,25 @@ public class Graph {
 			double longitude = pointGeoshape.getPoint().getLongitude();
 			// counter1 variable stores total no. of vertices satisfying Geo.WITHIN or its no. of edges
 			int counter1 = 0;
-			
-			for (Iterator <Vertex> iterator2 = graph.query().has("visible",Compare.EQUAL,1).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).vertices().iterator(); iterator2.hasNext();) 
+			String type1 = vertex.getProperty("type");
+			for (Iterator <Vertex> iterator2 = graph.query().has("visible",Compare.EQUAL,1).has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type1).vertices().iterator(); iterator2.hasNext();) 
 			{
 				Vertex vertex2 = iterator2.next();
 				Geoshape pointGeoshape2 = vertex2.getProperty("place");
-				Edge edge = vertex.addEdge("knows", vertex2);
+							
+				String type2 = vertex2.getProperty("type");
+				String edgeLabel = "";
+				
+				if(Integer.parseInt(type1) < Integer.parseInt(type2)){
+					edgeLabel = type1+"-"+type2;					
+				}else{
+					edgeLabel = type2+"-"+type1;
+				}
+				
+				Edge edge = vertex.addEdge(edgeLabel, vertex2);
 				edge.setProperty("distance",pointGeoshape.getPoint().distance(pointGeoshape2.getPoint()));
+				
+				/*
 				System.out.println(edge.getProperty("distance"));
 				double latitude2 = pointGeoshape2.getPoint().getLatitude();
 				double longitude2 = pointGeoshape2.getPoint().getLongitude();
@@ -234,7 +255,7 @@ public class Graph {
 				System.out.println(latitude2);
 				System.out.println(longitude2);
 				System.out.println("\n");
-				
+				*/
 				counter1++;
 			}
 			counter += counter1;			
@@ -372,7 +393,7 @@ public class Graph {
 		
 		for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
 			Edge edge = iterator.next();
-//			System.out.println(counter+" : "+" Edge Label = "+edge.getLabel()+" Distance = "+edge.getProperty("distance"));
+			System.out.println(counter+" : "+" Edge Label = "+edge.getLabel()+" Distance = "+edge.getProperty("distance"));
 			counter++;
 		}
 		System.out.println("Total no. of edges are = "+counter);		
@@ -652,6 +673,11 @@ public class Graph {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Date date = new Date();
 		
+		// Mapper to map crime types to simple strings
+		Mapper mapper = new Mapper();
+		Graph.enCoding = mapper.getEncoding();
+		Graph.deCoding = mapper.getDecoding();
+		
 		// Step 0 : Open Graph Database Connection
 		Database db = new Database();
 		TitanGraph graph = db.connect();
@@ -678,7 +704,7 @@ public class Graph {
 		
 		// Step 5 : Build edges for distance threshold = 0.2
 		addEdges(graph, 0.2);
-//		iterateEdges(graph);
+		iterateEdges(graph);
 //		graph.commit();
 //			
 //		date = new Date();
@@ -708,7 +734,6 @@ public class Graph {
 //				type.groupCount().cap());
 		System.out.println(pipe.count());
 */
-		
 		db.close(graph);	
 	}
 }
