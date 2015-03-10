@@ -11,23 +11,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.management.relation.Relation;
-
-import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
 
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
@@ -69,9 +63,9 @@ public class Graph {
 		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 //		PropertyKey placeKeyTSI = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Integer.class).make();
-		
-		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Double.class).make();
+		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Decimal.class).make();
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
+//		PropertyKey edgetypeKey = mgmt.make
 		
 		// Making all possible edge labels
 		Iterator iterator = enCoding.entrySet().iterator();
@@ -83,7 +77,7 @@ public class Graph {
 				Entry y = (Entry)iterator2.next();
 				String type2 = (String) y.getValue();
 				EdgeLabel label = mgmt.makeEdgeLabel(type1+"-"+type2).multiplicity(Multiplicity.MULTI).make();
-//				mgmt.buildEdgeIndex(label, type1+"-"+type2, Direction.BOTH,);
+				mgmt.buildEdgeIndex(label, type1+"-"+type2, Direction.BOTH,distanceKey);
 			}			
 		}		
 		
@@ -318,27 +312,25 @@ public class Graph {
 		return (time_2-time_1);
 	}
 	
-	public static void addEdgesMultiThread(TitanTransaction graph1, double distance) throws InterruptedException{
+	public static void addEdgesMultiThread(TitanTransaction graph, double distance) throws InterruptedException{
 		
 		double time1 = System.currentTimeMillis();	
-
-		ExecutorService executorService = Executors.newFixedThreadPool(1000);
-		Iterator<Vertex> iterator = graph1.getVertices().iterator();
+		Iterator<Vertex> iterator = graph.getVertices().iterator();
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
 		int i;
 		
 		for(i = 1;iterator.hasNext();i++){
 			
 			Vertex vertex = iterator.next();
-			EdgeInsertion edgeInsertion = new EdgeInsertion(graph1,vertex,distance);
+//			TitanTransaction graph2 = graph.newTransaction();
+			EdgeInsertion edgeInsertion = new EdgeInsertion(graph,vertex,distance);
 			System.out.println(i);
 			executorService.execute(edgeInsertion);
+		
 		}
 		executorService.shutdown();
-		int x = 0;
 //		executorService.awaitTermination(120, TimeUnit.SECONDS);
 		while(!executorService.isTerminated()){
-//			System.out.println(x);
-//			x++;
 			;
 		}
 		System.out.println("All the threads terminated successfully");
@@ -693,47 +685,37 @@ public class Graph {
 		// IterateEdges(graph);
 
 		// Step 3 : Initialize Graph Database
-		// TitanTransaction graph1 = graph.newTransaction();
+		TitanTransaction graph1 = graph.newTransaction();
 		
-		InitializeGraph(graph,100);
+		InitializeGraph(graph1,5000);
 		
 		System.out.println("Graph initialized");
 
 		// Step 4 : Generate stats
-		stats(graph);
+//		stats(graph1);
 		
 		// Step 5 : Build edges for distance threshold = 0.2
-		addEdges(graph, 0.2);
-		iterateEdges(graph);
-//		graph.commit();
+//		addEdges(graph, 0.3);
+		addEdgesMultiThread(graph1, 0.3);
+//		iterateEdges(graph1);
 //			
-//		date = new Date();
-//		System.out.println(dateFormat.format(date));
-//		
+		date = new Date();
+		System.out.println(dateFormat.format(date));
+		
 //		// Step 6 : Explore neighbors for distance threshold = 0.2 using Edge Traversal
 //		exploreNeighboursEdge(graph, 0.2);
 		
 		// Step 7 : Explore neighbors for distance threshold = 0.2 using Geo.WITHIN
 		
-		//		exploreNeighboursGeo(graph,"LIQUOR LAW VIOLATION", 0.2);
-			
+//		exploreNeighboursGeo(graph,"LIQUOR LAW VIOLATION", 0.2);
 //		Graph.countMap = new ConcurrentHashMap<String,Integer>();
 
 //		exploreNeighboursGeo(graph, 0.2);
 //		exploreNeighboursGeoMultiThread(graph, 0.2);
-				
-		// Step 8 : Close Graph Database Connection
-//		db.close(graph);
+		
+		graph1.commit();
 
-/*		
-		GremlinPipeline pipe = new GremlinPipeline();
-//		pipe.start(graph.V.type.groupCount().cap());
-//				.getVertex(1)).out("knows").property("name");
-		pipe.start(graph.getVertices());
-		pipe.aggregate();
-//				type.groupCount().cap());
-		System.out.println(pipe.count());
-*/
-		db.close(graph);	
+		// Step 8 : Close Graph Database Connection
+		db.close(graph);
 	}
 }
