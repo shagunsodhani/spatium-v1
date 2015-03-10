@@ -462,7 +462,7 @@ public class Graph {
 		int counter = 0;
 		Iterator it = typeMap.entrySet().iterator();
 	    while (it.hasNext()) {
-	        Map.Entry pairs = (Map.Entry)it.next();
+	        Map.Entry pairs = (Map.Entry)it.next();k
 	        System.out.println(counter+" : Exploring Neighbours for type = " + pairs.getKey());
 	        timeGeo += Graph.exploreNeighboursGeo(graph, (String) pairs.getKey(), distance);
 	        timeEdge += Graph.exploreNeighboursEdge(graph, (String) pairs.getKey(), distance);
@@ -687,7 +687,7 @@ public class Graph {
 		// Step 3 : Initialize Graph Database
 		TitanTransaction graph1 = graph.newTransaction();
 		
-		InitializeGraph(graph1,5000);
+		InitializeGraph(graph1,20000);
 		
 		System.out.println("Graph initialized");
 
@@ -697,7 +697,7 @@ public class Graph {
 		// Step 5 : Build edges for distance threshold = 0.2
 //		addEdges(graph, 0.3);
 		addEdgesMultiThread(graph1, 0.3);
-//		iterateEdges(graph1);
+		iterateEdges(graph1);
 //			
 		date = new Date();
 		System.out.println(dateFormat.format(date));
