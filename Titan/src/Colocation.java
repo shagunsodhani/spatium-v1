@@ -31,7 +31,7 @@ public class Colocation {
 		this.colocations = new ConcurrentHashMap<Integer, ConcurrentHashMap<String, ConcurrentHashMap<String, Double>>>();
 	}	
 	
-	public static void print_Frequent(HashMap<String, HashMap<String, Double>> Lk, int k){
+	public static void print_Frequent(HashMap<String, HashMap<String, Float>> Lk, int k){
 		
 		System.out.println("Frequent Colocations of Size "+k+" with their participation index");
 
@@ -47,7 +47,7 @@ public class Colocation {
 				
 				Map.Entry pair1 = (Map.Entry)it1.next();
 				String type2 = (String) pair1.getKey();
-				double pi = (Double) pair1.getValue();
+				float pi = (Float) pair1.getValue();
 				
 				System.out.println(type1+":"+type2+" = "+pi);
 			}
@@ -71,7 +71,7 @@ public class Colocation {
 		}		
 	}
 	
-	public static HashSet<List<String>> join_and_prune(HashMap<String, HashMap<String, Double>> Lk, int k){
+	public static HashSet<List<String>> join_and_prune(HashMap<String, HashMap<String, Float>> Lk, int k){
 		
 		long time1 = System.currentTimeMillis();
 		System.out.println("Candidate Colocations of Size "+(k+1));
@@ -146,7 +146,7 @@ public class Colocation {
 //						System.out.println(key+"---"+value);
 					
 						if(Lk.containsKey(key)){
-							HashMap<String, Double> temp = Lk.get(key);
+							HashMap<String, Float> temp = Lk.get(key);
 							if(temp.containsKey(value)){
 								continue;
 							}else{
@@ -173,6 +173,7 @@ public class Colocation {
 			
 		}
 		long time2 = System.currentTimeMillis();
+		System.out.println(time1+" ---- "+time2);
 		System.out.println("Total time required for joining and pruning for candidate colocations of size "+(k+1)+" is "+(time2-time1));
 		return Ckplus1;
 	}	
@@ -215,7 +216,7 @@ public class Colocation {
 		System.out.println("Time taken for size 1 : "+(time2-time1));
 	}
 	
-	public static HashMap<String, HashMap<String, Double>> L2(){
+	public static HashMap<String, HashMap<String, Float>> L2(){
 //		HashSet<List<String>> C2
 		
 		/*
@@ -226,9 +227,7 @@ public class Colocation {
 				
 		//global_count 
 		HashMap<String, HashMap<Long, Boolean>> global_count = new HashMap<String, HashMap<Long, Boolean>>();
-		HashMap<String, HashSet<String>> temp_C3 = new HashMap<String, HashSet<String>>();
-		
-		HashMap<String, HashMap<String, Double>> L2 = new HashMap<String, HashMap<String,Double>>();
+		HashMap<String, HashMap<String, Float>> L2 = new HashMap<String, HashMap<String,Float>>();
 		
 		long time1 = System.currentTimeMillis();
 		
@@ -291,7 +290,7 @@ public class Colocation {
 				Double x2 = (double) global_count.get(type2+":"+type1).size();
 				Double a = x1/total_count.get(type1);
 				Double b = x2/total_count.get(type2);
-				Double PI = java.lang.Math.min(a, b);
+				float PI = (float) java.lang.Math.min(a, b);
 				if (verbose)
 				{
 					System.out.println(type1);
@@ -311,23 +310,13 @@ public class Colocation {
 					counter+=1;
 					
 					if(L2.containsKey(type1)==false){
-						HashMap<String, Double> tempHashMap = new HashMap<String, Double>();
+						HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
 						tempHashMap.put(type2, PI);
 						L2.put(type1, tempHashMap);
 					}
 					else{
 						L2.get(type1).put(type2, PI);
-					}
-					
-//					if(temp_C3.containsKey(type1)==false){
-//						HashSet<String> tempset = new HashSet<String>();
-//						tempset.add(type2);
-//						temp_C3.put(type1, tempset);
-//					}
-//					else{
-//						temp_C3.get(type1).add(type2);
-//					}
-					
+					}					
 				}
 			}
 			
@@ -392,29 +381,84 @@ public class Colocation {
 		
 	}
 	
-//	public static void L3(){
-//		/*
-//		 * Generate colocation of size 3
-//		 */
-//		HashSet<List<String>> C3 = L2();	
-//		Iterator iterator = C3.iterator();
-//		while(iterator.hasNext())
-//			System.out.println(iterator.next());
-//		
-//	}
+	public static HashMap<String, HashMap<String, Float>> L3(HashSet<List<String>> Ck, int k){
+		/*
+		 * Generate colocation of size 3
+		 */
+		HashMap<String, HashMap<String, Float>> L3 = new HashMap<String, HashMap<String,Float>>();
+		System.out.println("Generating Colocations of Size "+k);
+		Iterator it = Ck.iterator();
+		
+		while(it.hasNext()){
+			
+		}		
+		return L3;
+	}
 	
+	public static boolean areConnected(long id1, long id2) {
+		
+		Vertex vertex = graph.getVertex(id1);
+		String type = vertex.getProperty("type");
+		Vertex vertex2 = graph.getVertex(id2);
+		String type2 = vertex2.getProperty("type");
+
+		if(Integer.parseInt(type) < Integer.parseInt(type2)){
+			for(Iterator<Vertex> it = vertex.getVertices(Direction.OUT,type+"-"+type2).iterator();
+					it.hasNext();){
+				Vertex vertex3 = it.next();
+//				System.out.println(type+"-"+type2);
+				if(id2 == ((long)vertex3.getId())){					
+					return true;
+				}
+			}
+		}
+		if(Integer.parseInt(type) > Integer.parseInt(type2))
+		{			
+			for(Iterator<Vertex> it = vertex2.getVertices(Direction.OUT,type2+"-"+type).iterator();
+					it.hasNext();){
+				Vertex vertex3 = it.next();
+//				System.out.println(type2+"-"+type);
+				if(id1 == ((long)vertex3.getId())){					
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		Colocation colocation = new Colocation();
 		// Total count of all size-1 colocations
-		L1();
+//		L1();
+//		
+//		// Frequent Colocations of size 2
+//		HashMap<String, HashMap<String, Float>> L2 = L2();
+//		print_Frequent(L2, 2);
+//		
+//		// Candidate Colocations of size 3
+//		HashSet<List<String>> C3 = join_and_prune(L2, 2);
+//		print_Candidate(C3, 3);
 		
-		// Frequent Colocations of size 2
-		HashMap<String, HashMap<String, Double>> L2 = L2();
-		print_Frequent(L2, 2);
 		
-		// Candidate Colocations of size 3
-		HashSet<List<String>> C3 = join_and_prune(L2, 2);
-		print_Candidate(C3, 3);
+		
+		List<Long> idsList = new ArrayList<Long>();
+		for(Iterator<Vertex> it = graph.getVertices().iterator(); it.hasNext();){
+			Vertex vertex = it.next();
+			idsList.add((long)vertex.getId());
+		}
+		
+		int counter = 0;
+		System.out.println("Total vertices = "+idsList.size());
+		
+		for(int i = 0;i<idsList.size()-1;i++){
+			for(int j = i+1;j<idsList.size();j++){
+				if(areConnected(idsList.get(i), idsList.get(j))==true){
+					counter++;
+				}
+			}
+		}
+		System.out.println("Total lookups are = "+counter);
 		
 		db.close(graph);
 		
