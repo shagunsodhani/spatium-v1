@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -26,7 +27,7 @@ public class Colocation {
 		this.db = new Database();
 		this.graph = this.db.connect();
 		this.total_count = new HashMap<String, Long>();
-		this.PI_threshold = 0.2;
+		this.PI_threshold = 0.05;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<Integer, ConcurrentHashMap<String, ConcurrentHashMap<String, Double>>>();
 	}	
@@ -34,7 +35,7 @@ public class Colocation {
 	public static void print_Frequent(HashMap<String, HashMap<String, Float>> Lk, int k){
 		
 		System.out.println("Frequent Colocations of Size "+k+" with their participation index");
-
+		int counter = 0;
 		Iterator it,it1;
 		it = Lk.entrySet().iterator();
 		while(it.hasNext()){
@@ -50,13 +51,15 @@ public class Colocation {
 				float pi = (Float) pair1.getValue();
 				
 				System.out.println(type1+":"+type2+" = "+pi);
+				counter++;
 			}
 		}
-		
+		System.out.println();
+		System.out.println("Total frequent colocations of size "+k+" are "+counter);
 	}
 	
 	public static void print_Candidate(HashSet<List<String>> Ck, int k){
-		
+		int counter = 0;
 		System.out.println("Candidate Colocations of Size "+k);
 		Iterator it,it1;
 		it = Ck.iterator();
@@ -68,7 +71,10 @@ public class Colocation {
 			}
 			candidate = candidate.substring(0, candidate.length()-1);
 			System.out.println(candidate);
+			counter++;
 		}		
+		System.out.println();
+		System.out.println("Total no.of of candidates of size "+k+" are "+counter);
 	}
 	
 	public static HashSet<List<String>> join_and_prune(HashMap<String, HashMap<String, Float>> Lk, int k){
@@ -139,7 +145,7 @@ public class Colocation {
 						String key = "", value = "";
 						int y;
 						for(y = 0 ; y < k-1;y++){
-							key = key+itemsk[y]+",";
+							key = key+itemsk[y]+":";
 						}
 						value = itemsk[y];
 						key = key.substring(0, key.length()-1);
@@ -385,14 +391,130 @@ public class Colocation {
 		/*
 		 * Generate colocation of size 3
 		 */
-		HashMap<String, HashMap<String, Float>> L3 = new HashMap<String, HashMap<String,Float>>();
+		long time1 = System.currentTimeMillis();
+		
+		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
 		
 		while(it.hasNext()){
+			HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
 			
-		}		
-		return L3;
+//			System.out.println("Validating Following colocation");
+			
+			List<String> tempList = (List<String>) it.next();
+			for(int i=0;i<tempList.size();i++){
+				String key = tempList.get(i);
+				if(unique.containsKey(key)==false){
+					HashSet<Long> tempHashSet = new HashSet<Long>();
+					unique.put(key, tempHashSet);
+				}
+			}
+			String type1 = tempList.get(0);
+			String type2 = tempList.get(1);
+			String type3 = tempList.get(2);
+//			System.out.println(type1+":"+type2+":"+type3);
+					
+			Iterator<Vertex> it1 = graph.query().has("type", Compare.EQUAL, type1).vertices().iterator();
+			while(it1.hasNext()){
+				
+				Vertex vertex1 = it1.next();
+				long id1 = (long) vertex1.getId();
+				unique.get(type1).add(id1);
+				
+				Iterator<Vertex> it2 = vertex1.getVertices(Direction.OUT, type1+"-"+type2).iterator();
+				Iterator<Vertex> it3 = vertex1.getVertices(Direction.OUT, type1+"-"+type3).iterator();
+ 				
+				while (it2.hasNext()) {
+					Vertex vertex2 = (Vertex) it2.next();
+					long id2 = (long) vertex2.getId();
+					
+					while (it3.hasNext()) {
+						Vertex vertex3 = (Vertex) it3.next();
+						long id3 = (long) vertex3.getId();
+						
+						if(areConnected(vertex2, vertex3)){
+						
+							if(unique.get(type1).contains(id1)==false){
+								unique.get(type1).add(id1);
+							}
+							if(unique.get(type2).contains(id2)==false){
+								unique.get(type2).add(id2);
+							}
+							if(unique.get(type3).contains(id3)==false){
+								unique.get(type3).add(id3);
+							}
+						}
+					}
+				}
+			}
+			float count_type1 = total_count.get(type1);
+			float count_type2 = total_count.get(type2);
+			float count_type3 = total_count.get(type3);
+			float pr_type1 = ((float) unique.get(type1).size())/count_type1;
+			float pr_type2 = ((float) unique.get(type2).size())/count_type2;
+			float pr_type3 = ((float) unique.get(type3).size())/count_type3;
+			float pi = pr_type1;
+			if(pr_type2 < pi){
+				if(pr_type3 < pi)
+				{
+					pi = pr_type3;
+				}else{
+					pi = pr_type2;
+				}
+			}else{
+				if(pr_type3 < pi){
+					pi = pr_type3;
+				}
+			}
+			if(pi>PI_threshold){
+//				System.out.println("Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
+				if(Lk.containsKey(type1+":"+type2)==false){
+					HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
+					tempHashMap.put(type3, pi);
+					Lk.put(type1+":"+type2, tempHashMap);
+				}else{
+					Lk.get(type1+":"+type2).put(type3, pi);
+				}
+			}
+			else{
+//				System.out.println("In-Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
+			}
+		}
+		long time2 = System.currentTimeMillis();
+		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
+		return Lk;
+	}
+	
+	public static boolean areConnected(Vertex vertex1, Vertex vertex2){
+		String type1 = vertex1.getProperty("type");
+		String type2 = vertex2.getProperty("type");
+		long id1 = (long) vertex1.getId();
+		long id2 = (long) vertex2.getId();
+		
+		if(Integer.parseInt(type1) < Integer.parseInt(type2)){
+			for(Iterator<Vertex> it = vertex1.getVertices(Direction.OUT,type1+"-"+type2).iterator();
+					it.hasNext();){
+				Vertex vertex3 = it.next();
+//				System.out.println(type+"-"+type2);
+				if(id2 == ((long)vertex3.getId())){					
+					return true;
+				}
+			}
+		}
+		if(Integer.parseInt(type1) > Integer.parseInt(type2))
+		{			
+			for(Iterator<Vertex> it = vertex2.getVertices(Direction.OUT,type2+"-"+type1).iterator();
+					it.hasNext();){
+				Vertex vertex3 = it.next();
+//				System.out.println(type2+"-"+type);
+				if(id1 == ((long)vertex3.getId())){					
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 	public static boolean areConnected(long id1, long id2) {
@@ -430,18 +552,23 @@ public class Colocation {
 	public static void main(String[] args) {
 		Colocation colocation = new Colocation();
 		// Total count of all size-1 colocations
-//		L1();
-//		
-//		// Frequent Colocations of size 2
-//		HashMap<String, HashMap<String, Float>> L2 = L2();
-//		print_Frequent(L2, 2);
-//		
-//		// Candidate Colocations of size 3
-//		HashSet<List<String>> C3 = join_and_prune(L2, 2);
-//		print_Candidate(C3, 3);
+		L1();
 		
+		// Frequent Colocations of size 2
+		HashMap<String, HashMap<String, Float>> L2 = L2();
+		print_Frequent(L2, 2);
 		
+		// Candidate Colocations of size 3
+		HashSet<List<String>> C3 = join_and_prune(L2, 2);
+		print_Candidate(C3, 3);
 		
+		HashMap<String, HashMap<String, Float>> L3 = L3(C3, 3);
+		print_Frequent(L3, 3);
+		
+		HashSet<List<String>> C4 = join_and_prune(L3, 3);
+		print_Candidate(C4, 4);
+		
+		/*
 		List<Long> idsList = new ArrayList<Long>();
 		for(Iterator<Vertex> it = graph.getVertices().iterator(); it.hasNext();){
 			Vertex vertex = it.next();
@@ -459,6 +586,7 @@ public class Colocation {
 			}
 		}
 		System.out.println("Total lookups are = "+counter);
+		*/
 		
 		db.close(graph);
 		
