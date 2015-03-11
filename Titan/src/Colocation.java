@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.client.MongoDatabase;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
@@ -17,6 +19,7 @@ import com.tinkerpop.blueprints.Vertex;
 public class Colocation {
 	
 	public static Database db;
+	public static MongoDatabase mongodb;
 	public static TitanGraph graph;
 	public static HashMap<String, Long> total_count; 
 	public static double PI_threshold;
@@ -30,6 +33,8 @@ public class Colocation {
 		this.PI_threshold = 0.05;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<Integer, ConcurrentHashMap<String, ConcurrentHashMap<String, Double>>>();
+		mongoDB mongoInstance = new mongoDB();
+		this.mongodb = mongoInstance.connect();
 	}	
 	
 	public static void print_Frequent(HashMap<String, HashMap<String, Float>> Lk, int k){
@@ -398,6 +403,9 @@ public class Colocation {
 		Iterator it = Ck.iterator();
 		
 		while(it.hasNext()){
+			
+			BasicDBObject doc = new BasicDBObject();
+			
 			HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
 			
 //			System.out.println("Validating Following colocation");
@@ -444,6 +452,7 @@ public class Colocation {
 							if(unique.get(type3).contains(id3)==false){
 								unique.get(type3).add(id3);
 							}
+							doc.append(type1+":"+type2, type3);
 						}
 					}
 				}
@@ -468,6 +477,7 @@ public class Colocation {
 				}
 			}
 			if(pi>PI_threshold){
+				
 //				System.out.println("Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
 				if(Lk.containsKey(type1+":"+type2)==false){
 					HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
@@ -550,6 +560,7 @@ public class Colocation {
 	
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
+		
 		Colocation colocation = new Colocation();
 		// Total count of all size-1 colocations
 		L1();
@@ -567,6 +578,10 @@ public class Colocation {
 		
 		HashSet<List<String>> C4 = join_and_prune(L3, 3);
 		print_Candidate(C4, 4);
+		
+		
+		
+		
 		
 		/*
 		List<Long> idsList = new ArrayList<Long>();
