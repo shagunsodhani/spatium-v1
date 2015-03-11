@@ -687,7 +687,7 @@ public class Graph {
 		// Step 3 : Initialize Graph Database
 		TitanTransaction graph1 = graph.newTransaction();
 		
-		InitializeGraph(graph1,20000);
+		InitializeGraph(graph1,5000);
 		
 		System.out.println("Graph initialized");
 
