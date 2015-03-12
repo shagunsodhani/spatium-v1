@@ -64,7 +64,7 @@ public class Colocation {
 				String type2 = (String) pair1.getKey();
 				float pi = (Float) pair1.getValue();
 				
-				System.out.println(type1+":"+type2+" = "+pi);
+//				System.out.println(type1+":"+type2+" = "+pi);
 				counter++;
 			}
 		}
@@ -84,7 +84,7 @@ public class Colocation {
 				candidate = candidate+tempList.get(i)+":";				
 			}
 			candidate = candidate.substring(0, candidate.length()-1);
-			System.out.println(candidate);
+//			System.out.println(candidate);
 			counter++;
 		}		
 		System.out.println();
@@ -465,17 +465,25 @@ public class Colocation {
 								unique.get(type3).add(id3);
 							}
 							
-							BasicDBObject query = new BasicDBObject(id1+":"+id2, new BasicDBObject("$exists",true));
-							if(coll.find(query).first()!=null){
-								Document result = coll.find(query).first();
-								Document documents = (Document) result.get(id1+":"+id2);
-								if(documents.containsKey(""+id3)==false){
-									documents.put(""+id3, 1);
-									coll.replaceOne(query, result);							
-								}
+//							BasicDBObject query = new BasicDBObject(id1+":"+id2, new BasicDBObject("$exists",true));
+							BasicDBObject searchQuery = new BasicDBObject().append("key", id1+":"+id2);
+							if(coll.find(searchQuery).first()!=null){
+								Document result = coll.find(searchQuery).first();
+//								Document documents = (Document) result.get("value");
+								List<Long> documents = (List<Long>) result.get("value");
+								documents.add(id3);
+								coll.replaceOne(searchQuery, result);
+								
+//								if(documents.containsKey(""+id3)==false){
+//									documents.put(""+id3, 1);
+//									coll.replaceOne(searchQuery, result);							
+//								}
 							}else{
 //								System.out.println(i+":"+j);
-								coll.insertOne(new Document(id1+":"+id2, new Document(""+id3,1)));
+								List<Long> tempList2 = new ArrayList<Long>();
+								tempList2.add(id3);
+								coll.insertOne(new Document("value", tempList2).append("key", id1+":"+id2));
+//								coll.insertOne(new Document("value", new Document(""+id3,1)).append("key", id1+":"+id2));
 							}
 							
 							total_cliques++;
@@ -503,10 +511,10 @@ public class Colocation {
 				}
 			}
 			if(pi>PI_threshold){
-				System.out.println("Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
+//				System.out.println("Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
 				
-				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
-
+//				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
+//
 //				MongoCursor<Document> cursor = coll.find().iterator();
 //				try {
 //				    while (cursor.hasNext()) {
@@ -532,6 +540,70 @@ public class Colocation {
 		}
 		long time2 = System.currentTimeMillis();
 		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
+		return Lk;
+	}
+	
+	public static HashMap<String, HashMap<String, Float>> Lk(HashSet<List<String>> Ck, int k){
+		
+		long time1 = System.currentTimeMillis();
+		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
+		System.out.println("Generating Colocations of Size "+k);
+		
+		Iterator it = Ck.iterator();
+		
+		while(it.hasNext()){
+			HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
+			
+			List<String> tempList = (List<String>) it.next();
+			for(int i=0;i<tempList.size();i++){
+				String key = tempList.get(i);
+				if(unique.containsKey(key)==false){
+					HashSet<Long> tempHashSet = new HashSet<Long>();
+					unique.put(key, tempHashSet);
+				}
+			}
+			String type1 = "";
+			int i;
+			for(i = 0; i < k-2; i++){
+				type1 += tempList.get(i)+":";
+			}
+			type1 = type1.substring(0, type1.length()-1);
+			String type2 = tempList.get(k-2);
+			String type3 = tempList.get(k-1);
+			
+			System.out.println(type1+":"+type2+":"+type3);
+			
+			// Initilize the collection A:B:C...k-terms
+			MongoCollection<Document> coll = mongodb.getCollection(type1+":"+type2+":"+type3);
+			MongoCollection<Document> coll_1 = mongodb.getCollection(type1+":"+type2);
+			
+			MongoCollection<Document> coll_2 = mongodb.getCollection(type1+":"+type3);
+			
+			MongoCursor<Document> cursor_1 = coll_1.find().iterator();
+			while (cursor_1.hasNext()) {
+					Document doc_1 = cursor_1.next();
+					
+					// id1 is a string delimited by :
+					String id1ist = doc_1.getString("key");
+					BasicDBObject searchQuery = new BasicDBObject().append("key", id1ist);
+					
+					if(coll_2.find(searchQuery).first()!=null){
+						Document doc_2 = coll_2.find(searchQuery).first();
+						
+						Document doc_1_value = (Document) doc_1.get("value");
+						
+					}
+//			        System.out.println(cursor_1.next());
+			}			
+//			System.out.println(type1+":"+type2+" = "+coll_1.count());
+//			System.out.println(type1+":"+type3+" = "+coll_2.count());
+			
+			
+		}
+		
+		
+		long time2 = System.currentTimeMillis();
+		System.out.println("Total time required to get frequent colocations of size "+k+" = "+(time2-time1));
 		return Lk;
 	}
 	
@@ -618,13 +690,16 @@ public class Colocation {
 		HashSet<List<String>> C4 = join_and_prune(L3, 3);
 		print_Candidate(C4, 4);
 		
+//		HashMap<String, HashMap<String, Float>> Lk = Lk(C4, 4);
+		
 		// Code Snippet for MongoDB
 		/*
 		MongoCollection<Document> coll = mongodb.getCollection("A:B:C");
 		
 		for(int i=0;i<5;i++){
 			for(int j = 0;j<5;j++){
-				BasicDBObject query = new BasicDBObject(i+":"+j, new BasicDBObject("$exists",true));
+//				BasicDBObject query = new BasicDBObject(i+":"+j, new BasicDBObject("$exists",true));
+				BasicDBObject searchQuery = new BasicDBObject().append("key", i+":"+j);
 				
 //				Document result = coll.find(query).first();
 //				System.out.println(result+"            "+result.get("_id"));
@@ -632,16 +707,22 @@ public class Colocation {
 //				System.out.println(documents);
 
 				for(int k = 0;k<10;k++){
-					if(coll.find(query).first()!=null){
-						Document result = coll.find(query).first();
-						Document documents = (Document) result.get(i+":"+j);
-						if(documents.containsKey(""+k)==false){
-							documents.put(""+k, 1);
-							coll.replaceOne(query, result);							
-						}
+					if(coll.find(searchQuery).first()!=null){
+						Document result = coll.find(searchQuery).first();
+//						Document documents = (Document) result.get("value");
+						List<Long> documents = (List<Long>) result.get("value");
+						documents.add((long) k);
+						coll.replaceOne(searchQuery, result);
+						
+//						if(documents.containsKey(""+k)==false){
+//							documents.put(""+k, 1);
+//							coll.replaceOne(searchQuery, result);
+//						}
 					}else{
 						System.out.println(i+":"+j);
-						coll.insertOne(new Document(i+":"+j, new Document(""+k,1)));
+						List<Long> tempList = new ArrayList<Long>();
+						tempList.add((long) k);
+						coll.insertOne(new Document("value", tempList).append("key", i+":"+j));
 //						coll.replaceOne(query, result);
 					}					
 				}
@@ -661,8 +742,8 @@ public class Colocation {
 		}
 		
 		coll.dropCollection();
-		*/
-		
+		mongodb.dropDatabase();
+		*/		
 		
 		// Code to verify that areConnected() method is correctly
 		/*
@@ -684,7 +765,7 @@ public class Colocation {
 		}
 		System.out.println("Total lookups are = "+counter);
 		*/
-		
+//		mongodb.dropDatabase();
 		db.close(graph);
 		
 	}
