@@ -7,9 +7,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.Cursor;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.CountOptions;
+import com.sun.org.apache.xpath.internal.operations.And;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
@@ -403,8 +412,7 @@ public class Colocation {
 		Iterator it = Ck.iterator();
 		
 		while(it.hasNext()){
-			
-			BasicDBObject doc = new BasicDBObject();
+			int total_cliques = 0;
 			
 			HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
 			
@@ -422,6 +430,10 @@ public class Colocation {
 			String type2 = tempList.get(1);
 			String type3 = tempList.get(2);
 //			System.out.println(type1+":"+type2+":"+type3);
+			
+			// Initialize the collection A:B:C
+			MongoCollection<Document> coll = mongodb.getCollection(type1+":"+type2+":"+type3);
+
 					
 			Iterator<Vertex> it1 = graph.query().has("type", Compare.EQUAL, type1).vertices().iterator();
 			while(it1.hasNext()){
@@ -442,7 +454,7 @@ public class Colocation {
 						long id3 = (long) vertex3.getId();
 						
 						if(areConnected(vertex2, vertex3)){
-						
+							
 							if(unique.get(type1).contains(id1)==false){
 								unique.get(type1).add(id1);
 							}
@@ -452,7 +464,21 @@ public class Colocation {
 							if(unique.get(type3).contains(id3)==false){
 								unique.get(type3).add(id3);
 							}
-							doc.append(type1+":"+type2, type3);
+							
+							BasicDBObject query = new BasicDBObject(id1+":"+id2, new BasicDBObject("$exists",true));
+							if(coll.find(query).first()!=null){
+								Document result = coll.find(query).first();
+								Document documents = (Document) result.get(id1+":"+id2);
+								if(documents.containsKey(""+id3)==false){
+									documents.put(""+id3, 1);
+									coll.replaceOne(query, result);							
+								}
+							}else{
+//								System.out.println(i+":"+j);
+								coll.insertOne(new Document(id1+":"+id2, new Document(""+id3,1)));
+							}
+							
+							total_cliques++;
 						}
 					}
 				}
@@ -477,8 +503,20 @@ public class Colocation {
 				}
 			}
 			if(pi>PI_threshold){
+				System.out.println("Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
 				
-//				System.out.println("Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
+				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
+
+//				MongoCursor<Document> cursor = coll.find().iterator();
+//				try {
+//				    while (cursor.hasNext()) {
+//				        System.out.println(cursor.next());
+//				    }
+//				} finally {
+//				    cursor.close();
+//				}
+				
+				
 				if(Lk.containsKey(type1+":"+type2)==false){
 					HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
 					tempHashMap.put(type3, pi);
@@ -489,6 +527,7 @@ public class Colocation {
 			}
 			else{
 //				System.out.println("In-Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
+				coll.dropCollection();
 			}
 		}
 		long time2 = System.currentTimeMillis();
@@ -564,25 +603,68 @@ public class Colocation {
 		Colocation colocation = new Colocation();
 		// Total count of all size-1 colocations
 		L1();
-		
-		// Frequent Colocations of size 2
+//		
+//		// Frequent Colocations of size 2
 		HashMap<String, HashMap<String, Float>> L2 = L2();
 		print_Frequent(L2, 2);
-		
-		// Candidate Colocations of size 3
+//		
+//		// Candidate Colocations of size 3
 		HashSet<List<String>> C3 = join_and_prune(L2, 2);
 		print_Candidate(C3, 3);
-		
+//		
 		HashMap<String, HashMap<String, Float>> L3 = L3(C3, 3);
 		print_Frequent(L3, 3);
-		
+//		
 		HashSet<List<String>> C4 = join_and_prune(L3, 3);
 		print_Candidate(C4, 4);
 		
+		// Code Snippet for MongoDB
+		/*
+		MongoCollection<Document> coll = mongodb.getCollection("A:B:C");
+		
+		for(int i=0;i<5;i++){
+			for(int j = 0;j<5;j++){
+				BasicDBObject query = new BasicDBObject(i+":"+j, new BasicDBObject("$exists",true));
+				
+//				Document result = coll.find(query).first();
+//				System.out.println(result+"            "+result.get("_id"));
+//				Document documents = (Document) result.get(i+":"+j);
+//				System.out.println(documents);
+
+				for(int k = 0;k<10;k++){
+					if(coll.find(query).first()!=null){
+						Document result = coll.find(query).first();
+						Document documents = (Document) result.get(i+":"+j);
+						if(documents.containsKey(""+k)==false){
+							documents.put(""+k, 1);
+							coll.replaceOne(query, result);							
+						}
+					}else{
+						System.out.println(i+":"+j);
+						coll.insertOne(new Document(i+":"+j, new Document(""+k,1)));
+//						coll.replaceOne(query, result);
+					}					
+				}
+//				System.out.println(documents);
+//				System.out.println(result);
+			}
+		}
+		System.out.println("Total Count = "+coll.count());
+
+		MongoCursor<Document> cursor = coll.find().iterator();
+		try {
+		    while (cursor.hasNext()) {
+		        System.out.println(cursor.next());
+		    }
+		} finally {
+		    cursor.close();
+		}
+		
+		coll.dropCollection();
+		*/
 		
 		
-		
-		
+		// Code to verify that areConnected() method is correctly
 		/*
 		List<Long> idsList = new ArrayList<Long>();
 		for(Iterator<Vertex> it = graph.getVertices().iterator(); it.hasNext();){
