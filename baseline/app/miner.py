@@ -142,7 +142,7 @@ class Miner(object):
 		if(sql_instance[-1] == ')'):
 			db.write(sql_instance, self.cursor, self.conn)
 	
-	def colocation_2(self):
+	def colocation_2(self, type_of_pi = 1):
 
 		"""to generate colocations of size 2"""
 
@@ -194,10 +194,15 @@ class Miner(object):
 						count_b+=1
 						B_temp[b] = 0
 
-				participationIndex = 1.0*(count_a * count_b)
-				participationIndex = participationIndex / (type_count[candidate_list[i]] * type_count[candidate_list[j]])		
-				if( participationIndex >= self.minPrevalance):
+				if(type_of_pi == 1):
+					participationIndex = 1.0*(count_a * count_b)
+					participationIndex = participationIndex / (type_count[candidate_list[i]] * type_count[candidate_list[j]])		
+				elif(type_of_pi == 2):
+					participationIndex_a = (1.0*(count_a))/type_count[candidate_list[i]]
+					participationIndex_b = (1.0*(count_b))/type_count[candidate_list[j]]
+					participationIndex = min(participationIndex_a, participationIndex_b)
 
+				if (participationIndex >= self.minPrevalance):
 					participationIndex = round(participationIndex,7)
 					sql_candidate = "INSERT INTO "+table_candidate_name+" (typeid1, typeid2, pi, labelprev1, labelprev2) \
 									VALUES ("+str(candidate_list[i])+","+str(candidate_list[j])+","+str(participationIndex)+","+str(i)+","+str(j)+")"
@@ -231,7 +236,7 @@ class Miner(object):
 						# print sql_instance
 						db.write(sql_instance, self.cursor, self.conn)
 					
-	def colocation_k(self, k):
+	def colocation_k(self, k, type_of_pi=1):
 
 		"""colocation for size k using colocation for size k-1"""
 		table_candidate_name_old = "candidate"+str(k-1)
@@ -245,9 +250,6 @@ class Miner(object):
 		#contains all candidate co-locations for table instance computation
 
 		if self.create == 1:
-
-
-
 			create_table(k, self.cursor)
 		
 		sql = "SELECT "
@@ -312,9 +314,11 @@ class Miner(object):
 			if(self.quiet == 0):
 				print sql
 			instance_result = db.read(sql, self.cursor)
-			# print instance_result
+			if(len(instance_result)==0):
+				continue 
 			k_temp = {}
 			count_k = {}
+
 			for l in instance_result:
 				length = len(l)
 				for m in range(0,length):
@@ -332,9 +336,17 @@ class Miner(object):
 			for m in result_count:
 				type_count[int(m[0])] = int(m[1])
 
-			for m in range(0,k):
-				participationIndex *= (count_k[m])
-				participationIndex = participationIndex / (type_count[int(i[m])])		
+			if (type_of_pi == 1):
+				for m in range(0,k):
+					participationIndex *=(count_k[m])
+					participationIndex = participationIndex / (type_count[int(i[m])])
+
+
+			elif(type_of_pi == 2):
+				for m in range(0,k):
+					participationIndex_temp = (1.0*(count_k[m])) / (type_count[int(i[m])])
+					participationIndex = min(participationIndex, participationIndex_temp)
+						
 			
 			if( participationIndex >= self.minPrevalance):
 
