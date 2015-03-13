@@ -379,16 +379,28 @@ public class Graph {
 		/*
 		 * Iterates over all edges of a graph and displays total no. of edges
 		 */
-		
+		HashMap<String, Integer> count_edges_distribution = new HashMap<String, Integer>();
 		System.out.println("iterateEdges function called.\n");
 		int counter = 0;
 		
 		for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
 			Edge edge = iterator.next();
-			System.out.println(counter+" : "+" Edge Label = "+edge.getLabel()+" Distance = "+edge.getProperty("distance"));
+//			System.out.println(counter+" : "+" Edge Label = "+edge.getLabel()+" Distance = "+edge.getProperty("distance"));
+			if(count_edges_distribution.get(edge.getLabel()) == null){
+				count_edges_distribution.put(edge.getLabel(), 1);
+			}else{
+				int temp = count_edges_distribution.get(edge.getLabel());
+				count_edges_distribution.put(edge.getLabel(), ++temp);
+			}
 			counter++;
 		}
-		System.out.println("Total no. of edges are = "+counter);		
+		System.out.println("Total no. of edges are = "+counter);
+		System.out.println("Distribution of Edges = ");
+		Iterator<String> it = count_edges_distribution.keySet().iterator();
+		while(it.hasNext()){
+			String label = it.next();
+			System.out.println(label+" = "+count_edges_distribution.get(label));
+		}
 	}
 
 	public static void removeVertices(TitanGraph graph, String type) {
@@ -677,27 +689,27 @@ public class Graph {
 		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
-		graph = clearGraph(db, graph);
+//		graph = clearGraph(db, graph);
 			
 		// Step 2 : Build Schema
-		build_schema(graph);
+//		build_schema(graph);
 		
 		// IterateEdges(graph);
 
 		// Step 3 : Initialize Graph Database
 		TitanTransaction graph1 = graph.newTransaction();
 		
-		InitializeGraph(graph1,10000);
+//		InitializeGraph(graph1,10000);
 		
-		System.out.println("Graph initialized");
+//		System.out.println("Graph initialized");
 
 		// Step 4 : Generate stats
 //		stats(graph1);
 		
 		// Step 5 : Build edges for distance threshold = 0.2
 //		addEdges(graph, 0.3);
-		addEdgesMultiThread(graph1, 0.3);
-//		iterateEdges(graph1);
+//		addEdgesMultiThread(graph1, 0.3);
+		iterateEdges(graph1);
 //			
 		date = new Date();
 		System.out.println(dateFormat.format(date));
