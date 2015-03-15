@@ -14,3 +14,45 @@ class Compare():
 		self.cursor = self.conn.cursor()
 		self.verbose = verbose
 
+	def compare_results_size2(self, label = 1, prosposed_results_file = "graph.txt"):
+		"""Compare results for size 2 from proposed algorithm and baseline method for correctness label is the `label` corresponding to size 2 """
+		D = {}
+		sql_baseline = "SELECT instanceid1, instanceid2 FROM instance2 WHERE label = "+str(label)
+		result = db.read(sql_baseline, self.cursor)
+		for i in result:
+			id1 = str(i[0])
+			id2 = str(i[1])
+			if(int(id1) > int(id2)):
+				key = id1+":"+id2
+			else:
+				key = id2+":"+id1
+			D[key] = "baseline"
+
+		with open(prosposed_results_file) as graph:
+			for line in graph:
+				a = line.strip().split()
+				id1 = str(a[0])
+				id2 = str(a[1])
+				if(int(id1) > int(id2)):
+					key = id1+":"+id2
+				else:
+					key = id2+":"+id1
+				if key not in D:
+					D[key] = "proposed"
+				else:
+					D[key] = "match"
+
+		match_count = 0
+		proposed_count = 0
+		baseline_count = 0
+		for i in D:
+			if D[i] == "match":
+				match_count+=1
+			elif D[i] == "proposed":
+				proposed_count+=1
+			else:
+				baseline_count+=1
+
+		print "baseline_count", baseline_count
+		print "proposed_count", proposed_count
+		print "match_count", match_count
