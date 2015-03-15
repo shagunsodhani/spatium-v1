@@ -6,24 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.validation.constraints.Min;
-
-import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
-import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.Cursor;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.CountOptions;
-import com.sun.org.apache.xpath.internal.operations.And;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -37,7 +26,7 @@ public class Colocation {
 	public static HashMap<String, Long> total_count; 
 	public static double PI_threshold;
 	public static boolean verbose;
-	public static ConcurrentHashMap<Integer,ConcurrentHashMap<String,ConcurrentHashMap<String, Double>>> colocations;
+	public static ConcurrentHashMap<List<String>,Double>  colocations;
 	
 	public Colocation(){
 		this.db = new Database();
@@ -45,7 +34,7 @@ public class Colocation {
 		this.total_count = new HashMap<String, Long>();
 		this.PI_threshold = 0.1;
 		this.verbose = false;
-		this.colocations = new ConcurrentHashMap<Integer, ConcurrentHashMap<String, ConcurrentHashMap<String, Double>>>();
+		this.colocations = new ConcurrentHashMap<List<String>,Double>();
 		mongoDB mongoInstance = new mongoDB();
 		this.mongodb = mongoInstance.connect();
 	}	
@@ -68,7 +57,8 @@ public class Colocation {
 				String type2 = (String) pair1.getKey();
 				float pi = (Float) pair1.getValue();
 				
-				System.out.println(type1+":"+type2+" = "+pi);
+//				System.out.println(type1+":"+type2+" = "+pi);
+				System.out.println(type1+":"+type2);
 				counter++;
 			}
 		}
@@ -370,6 +360,10 @@ public class Colocation {
 		/*
 		 * Generate colocation of size 3
 		 */
+		
+		if(Ck.isEmpty()){
+			System.out.println("Yes Empty");
+		}
 		long time1 = System.currentTimeMillis();
 		
 		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
@@ -405,34 +399,75 @@ public class Colocation {
 				
 				Vertex vertex1 = it1.next();
 				long id1 = (long) vertex1.getId();
-				long instanceid1 = (long) vertex1.getProperty("instanceid");
-				Iterator<Edge> it2 = vertex1.getEdges(Direction.BOTH, type1+"-"+type2).iterator();
+								
+				List<Long> v2 = new ArrayList<Long>();
+				List<Long> v3 = new ArrayList<Long>();
+				boolean flag_outer = false;
+				
+//				Iterator<Edge> it2 = vertex1.getEdges(Direction.IN, type1+"-"+type2).iterator();
+				Iterator<Vertex> it2 = vertex1.getVertices(Direction.IN, type1+"-"+type2).iterator();
+				while(it2.hasNext()){
+//					Edge edge = it2.next();
+//					Vertex vertex2 = edge.getVertex(Direction.OUT);
+					Vertex vertex2 = it2.next();
+					v2.add((long) vertex2.getProperty("id"));
+				}
+				
+//				Iterator<Edge> it3 = vertex1.getEdges(Direction.IN, type1+"-"+type3).iterator();
+				Iterator<Vertex> it3 = vertex1.getVertices(Direction.IN, type1+"-"+type3).iterator();
+				while(it3.hasNext()){
+//					Edge edge = it3.next();
+//					Vertex vertex3 = edge.getVertex(Direction.OUT);
+					Vertex vertex3 = it3.next();
+					v3.add((long) vertex3.getProperty("id"));
+				}
+				for(int i =0 ; i < v2.size();i++){
+					boolean flag_inner = false;
+					List<Long> temp_list = new ArrayList<Long>();
+
+					for(int j =0; j < v3.size(); j++){
+							if(areConnected(v2.get(i), v3.get(j))==true){
+							unique.get(type3).add(v3.get(j));
+							temp_list.add(v3.get(j));
+							flag_inner = true;
+							total_cliques++;
+						}
+					}
+					if(flag_inner == true){
+						unique.get(type2).add((v2.get(i)));
+						flag_outer = true;
+						coll.insertOne(new Document("value", temp_list).append("key", id1+":"+v2.get(i)));
+					}
+				}
+				if(flag_outer == true){
+					unique.get(type1).add(id1);
+				}
+				
+				
+				/*
+				Iterator<Edge> it2 = vertex1.getEdges(Direction.IN, type1+"-"+type2).iterator();
 //				Iterator<Vertex> it2 = vertex1.getVertices(Direction.IN, type1+"-"+type2).iterator();
 //				Iterator<Vertex> it3 = vertex1.getVertices(Direction.IN, type1+"-"+type3).iterator();
- 				
+
 				while (it2.hasNext()) {
 					Edge e2 = it2.next();
 //					Vertex vertex2 = (Vertex) it2.next();
 					Vertex vertex2 = (Vertex) e2.getVertex(Direction.OUT);
 					long id2 = (long) vertex2.getId();
-					long instanceid2 = (long) vertex2.getProperty("instanceid");
 					
-					Iterator<Edge> it3 = vertex1.getEdges(Direction.BOTH, type1+"-"+type3).iterator();
+					Iterator<Edge> it3 = vertex1.getEdges(Direction.IN, type1+"-"+type3).iterator();
 					while (it3.hasNext()) {
 						Edge e3 = it3.next();
 //						Vertex vertex3 = (Vertex) it3.next();
 						Vertex vertex3 = (Vertex) e3.getVertex(Direction.OUT);
 						long id3 = (long) vertex3.getId();
-						long instanceid3 = (long) vertex3.getProperty("instanceid");
 						
 						if(areConnected(id2, id3)==true){
 							
 							unique.get(type1).add(id1);
 							unique.get(type2).add(id2);
 							unique.get(type3).add(id3);
-							if(type1.equals("3") & type2.equals("7") & type3.equals("18")){
-								System.out.println(instanceid1+" "+instanceid2+" "+instanceid3);
-							}
+
 							BasicDBObject searchQuery = new BasicDBObject().append("key", id1+":"+id2);
 							if(coll.find(searchQuery).first()!=null){
 								Document result = coll.find(searchQuery).first();
@@ -448,6 +483,8 @@ public class Colocation {
 						}
 					}
 				}
+				*/
+				
 			}
 			float count_type1 = total_count.get(type1);
 			float count_type2 = total_count.get(type2);
@@ -470,6 +507,7 @@ public class Colocation {
 			}
 			
 			if(pi>=PI_threshold){
+				verbose = true;
 				if(verbose){
 					System.out.println("--------------");
 					System.out.println("Frequent = "+type1+":"+type2+":"+type3+" PI = "+pi);
@@ -477,6 +515,7 @@ public class Colocation {
 					System.out.println("Total_Count = "+count_type1+":"+count_type2+":"+count_type3);
 					System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
 				}
+				verbose = false;
 				
 				if(Lk.containsKey(type1+":"+type2)==false){
 					HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
@@ -490,6 +529,58 @@ public class Colocation {
 				coll.dropCollection();
 			}
 		}
+		long time2 = System.currentTimeMillis();
+		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
+		return Lk;
+	}
+	
+	public static HashMap<String, HashMap<String, Float>> multithreaded_L3(HashSet<List<String>> Ck, int k){
+		/*
+		 * Generate colocation of size 3
+		 */
+		long time1 = System.currentTimeMillis();
+		
+		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
+		System.out.println("Generating Colocations of Size "+k);
+		Iterator it = Ck.iterator();
+		
+		/*
+		while(it.hasNext()){
+			
+			float pi;
+			if(pi>=PI_threshold){
+				System.out.println("--------------");
+//				System.out.println("Frequent = "+type1+":"+type2+":"+type3+" PI = "+pi);
+//				System.out.println("Unique_Count = "+unique.get(type1).size()+":"+unique.get(type2).size()+":"+unique.get(type3).size());
+//				System.out.println("Total_Count = "+count_type1+":"+count_type2+":"+count_type3);
+				
+//				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
+	//
+//				MongoCursor<Document> cursor = coll.find().iterator();
+//				try {
+//				    while (cursor.hasNext()) {
+//				        System.out.println(cursor.next());
+//				    }
+//				} finally {
+//				    cursor.close();
+//				}
+				
+				
+//				if(Lk.containsKey(type1+":"+type2)==false){
+//					HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
+//					tempHashMap.put(type3, pi);
+//					Lk.put(type1+":"+type2, tempHashMap);
+//				}else{
+//					Lk.get(type1+":"+type2).put(type3, pi);
+//				}
+			}
+			else{
+//				System.out.println("In-Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
+//				coll.dropCollection();
+			}
+			
+		}
+		*/
 		long time2 = System.currentTimeMillis();
 		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
 		return Lk;
@@ -672,27 +763,27 @@ public class Colocation {
 		Colocation colocation = new Colocation();
 		// Total count of all size-1 colocations
 		L1();
-////		
-////		// Frequent Colocations of size 2
-		HashMap<String, HashMap<String, Float>> L2 = L2();
-////		print_Frequent(L2, 2);
-////		
-////		// Candidate Colocations of size 3
-		HashSet<List<String>> C3 = join_and_prune(L2, 2);
-////		print_Candidate(C3, 3);
-//
-		HashMap<String, HashMap<String, Float>> L3 = L3(C3, 3);
-		print_Frequent(L3, 3);
-
-//		HashSet<List<String>> C4 = join_and_prune(L3, 3);
-//		print_Candidate(C4, 4);
 		
-//		HashMap<String, HashMap<String, Float>> Lk = Lk(C4, 4);
-//		print_Frequent(Lk, 4);
-//		
-//		HashSet<List<String>> C5 = join_and_prune(Lk, 4);
-//		print_Candidate(C5, 5);
+		HashMap<String, HashMap<String, Float>> Lk;
+		HashSet<List<String>> Ck = new HashSet<List<String>>();
 		
+		for(int k = 2;;k++){
+			System.out.println("Current K is "+k);
+			if(k==2){
+				Lk = L2();				
+			}else if (k==3) {
+				Lk = L3(Ck, k);
+			}else {
+				Lk = Lk(Ck, k);
+			}
+			print_Frequent(Lk, k);
+			Ck = join_and_prune(Lk, k);
+			print_Candidate(Ck, k+1);
+			
+			if(Ck.isEmpty()){
+				break;
+			}
+		}		
 		// Code Snippet for MongoDB
 		/*
 		MongoCollection<Document> coll = mongodb.getCollection("A:B:C");

@@ -42,6 +42,29 @@ public class mongoDB {
 		PORT = prop.getProperty("mongoDB.port");
 	}
 	
+	public mongoDB(String database){
+		Properties prop = new Properties();
+		InputStream input = null;
+		try {	 
+			input = new FileInputStream("config/config.properties");
+			prop.load(input);
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+					}
+				}
+			}
+		
+		HOSTNAME = prop.getProperty("mongoDB.hostname");
+		DATABASE = database;
+		PORT = prop.getProperty("mongoDB.port");
+	}
+	
 	public MongoDatabase connect(){
 		
 		MongoClient mongoClient = new MongoClient( HOSTNAME , Integer.parseInt(PORT) );
