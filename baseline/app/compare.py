@@ -105,42 +105,42 @@ class Compare():
 		print "proposed_count", proposed_count
 		print "match_count", match_count
 
-	def compare_results_size3(self, prosposed_results_file = "test/graph.txt"):
-		"""Compare results for size 2 from proposed algorithm and baseline method for correctness label is the `label` corresponding to size 2 """
-		D = {}
-		sql_baseline = "SELECT typeid1, typeid2, typeid3 FROM candidate3"
-		result = db.read(sql_baseline, self.cursor)
-		for i in result:
-			id1 = str(i[0])
-			id2 = str(i[1])
-			id3 = str(i[2])
-			key = id1+":"+id2+":"+id3
-			D[key] = "baseline"
+	# def compare_results_size3(self, prosposed_results_file = "test/graph.txt"):
+	# 	"""Compare results for size 2 from proposed algorithm and baseline method for correctness label is the `label` corresponding to size 2 """
+	# 	D = {}
+	# 	sql_baseline = "SELECT typeid1, typeid2, typeid3 FROM candidate3"
+	# 	result = db.read(sql_baseline, self.cursor)
+	# 	for i in result:
+	# 		id1 = str(i[0])
+	# 		id2 = str(i[1])
+	# 		id3 = str(i[2])
+	# 		key = id1+":"+id2+":"+id3
+	# 		D[key] = "baseline"
 
-		with open(prosposed_results_file) as graph:
-			for line in graph:
-				a = line.strip().split(":")
-				print a
-				id1 = str(a[0])
-				id2 = str(a[1])
-				id3 = str(a[2])
-				key = id1+":"+id2+":"+id3
-				if key not in D:
-					D[key] = "proposed"
-				else:
-					D[key] = "match"
+	# 	with open(prosposed_results_file) as graph:
+	# 		for line in graph:
+	# 			a = line.strip().split(":")
+	# 			print a
+	# 			id1 = str(a[0])
+	# 			id2 = str(a[1])
+	# 			id3 = str(a[2])
+	# 			key = id1+":"+id2+":"+id3
+	# 			if key not in D:
+	# 				D[key] = "proposed"
+	# 			else:
+	# 				D[key] = "match"
 
-		match_count = 0
-		proposed_count = 0
-		baseline_count = 0
-		for i in D:
-			if D[i] == "match":
-				match_count+=1
-			elif D[i] == "proposed":
-				proposed_count+=1
-			else:
-				baseline_count+=1
+	# 	match_count = 0
+	# 	proposed_count = 0
+	# 	baseline_count = 0
+	# 	for i in D:
+	# 		if D[i] == "match":
+	# 			match_count+=1
+	# 		elif D[i] == "proposed":
+	# 			proposed_count+=1
+	# 		else:
+	# 			baseline_count+=1
 
-		print "baseline_count", baseline_count
-		print "proposed_count", proposed_count
-		print "match_count", match_count
+	# 	print "baseline_count", baseline_count
+	# 	print "proposed_count", proposed_count
+	# 	print "match_count", match_count
