@@ -14,7 +14,7 @@ class Compare():
 		self.cursor = self.conn.cursor()
 		self.verbose = verbose
 
-	def compare_results_size2(self, label = 1, prosposed_results_file = "graph.txt"):
+	def compare_results_size2(self, label = 1, prosposed_results_file = "test/graph.txt"):
 		"""Compare results for size 2 from proposed algorithm and baseline method for correctness label is the `label` corresponding to size 2 """
 		D = {}
 		sql_baseline = "SELECT instanceid1, instanceid2 FROM instance2 WHERE label = "+str(label)
