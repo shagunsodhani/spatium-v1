@@ -63,7 +63,7 @@ class Miner(object):
 		"""To initialise location table"""
 		conn = db.connect(self.app_name, 'spatium')
 		cursor = conn.cursor()
-		sql = "SELECT DISTINCT(primary_type) FROM dataset"
+		sql = "SELECT DISTINCT(primary_type) FROM dataset ORDER BY primary_type"
 		result = db.read(sql, cursor)
 		j = 1;
 		for i in result:
@@ -178,7 +178,7 @@ class Miner(object):
 		for i in range(0, length-1):
 			for j in range(i+1, length):
 				sql = "select i.instanceid, j.instanceid from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
-				   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lng/180.0-PI()*i.lng/180.0))*6371 <= "+str(R)
+				   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lng/180.0-PI()*i.lng/180.0))*6378.137 <= "+str(R)
 				result = db.read(sql, self.cursor)	
 				A_temp = {}
 				B_temp = {}
@@ -297,6 +297,8 @@ class Miner(object):
 
 		R = self.threshold_distance
 		# R = 1000000
+		# print "Size "+str(k)+" colocations are "
+		# print len(accept)
 		for i in accept:
 			labelprev1 = str(i[k])
 			labelprev2 = str(i[k+1])
@@ -310,9 +312,10 @@ class Miner(object):
 			for j in range(1,k-1):	
 				sql+= "T1.instanceid"+str(j) + " = T2.instanceid"+str(j)+" AND "
 			sql+= " L1.instanceid = T1.instanceid"+str(k-1)+" AND L2.instanceid = T2.instanceid"+str(k-1)+" \
-			AND ACOS(SIN(PI()*L1.lat/180.0)*SIN(PI()*L2.lat/180.0)+COS(PI()*L1.lat/180.0)*COS(PI()*L2.lat/180.0)*COS(PI()*L2.lng/180.0-PI()*L1.lng/180.0))*6371 <= "+str(R)
+			AND ACOS(SIN(PI()*L1.lat/180.0)*SIN(PI()*L2.lat/180.0)+COS(PI()*L1.lat/180.0)*COS(PI()*L2.lat/180.0)*COS(PI()*L2.lng/180.0-PI()*L1.lng/180.0))*6378.137 <= "+str(R)
 			if(self.quiet == 0):
 				print sql
+			# print sql
 			instance_result = db.read(sql, self.cursor)
 			if(len(instance_result)==0):
 				continue 
@@ -429,7 +432,7 @@ class Miner(object):
 			for j in range(0, length):
 				if (i!=j):
 					sql = "select count(*) from location i, location j where i.type = " + str(candidate_list[i]) + " and j.type = "+ str(candidate_list[j])\
-					   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lng/180.0-PI()*i.lng/180.0))*6371 <= "+str(R)
+					   + " and ACOS(SIN(PI()*i.lat/180.0)*SIN(PI()*j.lat/180.0)+COS(PI()*i.lat/180.0)*COS(PI()*j.lat/180.0)*COS(PI()*j.lng/180.0-PI()*i.lng/180.0))*6378.137 <= "+str(R)
 					result = db.read(sql, self.cursor)
 					number_of_edges+=int(result[0][0])
 
