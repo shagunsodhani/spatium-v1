@@ -2,6 +2,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,7 +11,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
@@ -66,7 +66,7 @@ public class Graph {
 		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Decimal.class).make();
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
 //		PropertyKey edgetypeKey = mgmt.make
-		
+		PropertyKey instanceid = mgmt.makePropertyKey("instanceid").dataType(Long.class).make();
 		// Making all possible edge labels
 		Iterator iterator = enCoding.entrySet().iterator();
 		while(iterator.hasNext()){
@@ -85,7 +85,7 @@ public class Graph {
 //		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKeyTSI).buildCompositeIndex();
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
-		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).addKey(timeKey).buildMixedIndex("search");
+		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).addKey(timeKey).addKey(instanceid).buildMixedIndex("search");
 
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
@@ -135,7 +135,8 @@ public class Graph {
 		         type = rs.getString("primary_type");
 		         tym = rs.getInt("date");
 //		         System.out.println(id+" "+latitude+" "+longitude+" "+type);
-
+		         if(latitude==0.0 || longitude==0.0)
+		        	 continue;
 		         Geoshape place = Geoshape.point(latitude, longitude);
 	 		     Geoshape approxplace = Geoshape.point((double)Math.round(latitude*100)/100, (double)Math.round(longitude*100)/100);  
 	 		     Vertex node = graph.addVertex(id);
@@ -144,13 +145,14 @@ public class Graph {
 	 		     node.setProperty("place", place);
 	 		     node.setProperty("visible", 1);
 	 		     node.setProperty("time", tym);
+	 		     node.setProperty("instanceid", id);
 //	 		     node.setProperty("distance", 2.345);
 	 		     count++;
 //	 		     node.getProperty("place");
 	 		     
 	 		     if(count%100000 == 0)
 	 		     {
-	 		    	time_4 = System.currentTimeMillis();
+	 		    	 time_4 = System.currentTimeMillis();
 	 		    	 System.out.println("Total vertices added till now = "+count+" in "+(time_4-time_3)+" ms.");
 	 		    	 time_3 = time_4;
 	 		    	 graph.commit();
@@ -239,6 +241,7 @@ public class Graph {
 				
 				Edge edge = vertex.addEdge(edgeLabel, vertex2);
 				edge.setProperty("distance",pointGeoshape.getPoint().distance(pointGeoshape2.getPoint()));
+				
 				
 				/*
 				System.out.println(edge.getProperty("distance"));
@@ -382,10 +385,19 @@ public class Graph {
 		HashMap<String, Integer> count_edges_distribution = new HashMap<String, Integer>();
 		System.out.println("iterateEdges function called.\n");
 		int counter = 0;
-		
+		int temp_count = 0;
 		for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
 			Edge edge = iterator.next();
+			Vertex v1 = edge.getVertex(Direction.IN);
+			Vertex v2 = edge.getVertex(Direction.OUT);
 //			System.out.println(counter+" : "+" Edge Label = "+edge.getLabel()+" Distance = "+edge.getProperty("distance"));
+//			System.out.println(v1.getProperty("instanceid")+" "+v2.getProperty("instanceid"));
+//			System.out.println(v1.getProperty("type")+":"+v2.getProperty("type"));
+			
+			if(Integer.parseInt((String)v1.getProperty("type")) < Integer.parseInt((String)v2.getProperty("type"))){
+				temp_count ++;
+			}
+			
 			if(count_edges_distribution.get(edge.getLabel()) == null){
 				count_edges_distribution.put(edge.getLabel(), 1);
 			}else{
@@ -394,13 +406,13 @@ public class Graph {
 			}
 			counter++;
 		}
-		System.out.println("Total no. of edges are = "+counter);
-		System.out.println("Distribution of Edges = ");
-		Iterator<String> it = count_edges_distribution.keySet().iterator();
-		while(it.hasNext()){
-			String label = it.next();
-			System.out.println(label+" = "+count_edges_distribution.get(label));
-		}
+		System.out.println("Total no. of edges are = "+counter+ " and temp_count "+temp_count);
+//		System.out.println("Distribution of Edges = ");
+//		Iterator<String> it = count_edges_distribution.keySet().iterator();
+//		while(it.hasNext()){
+//			String label = it.next();
+//			System.out.println(label+" = "+count_edges_distribution.get(label));
+//		}
 	}
 
 	public static void removeVertices(TitanGraph graph, String type) {
@@ -442,12 +454,42 @@ public class Graph {
 		System.out.println("Total no. of edges removed were = "+counter);		
 	}
 	
-	public static void removeEdges(TitanGraph graph, String type1, String type2) {
-		String labelString ="";
+	public static void removeEdges(TitanTransaction graph, Long instanceid1, Long instanceid2) {
 		
-		if (type1 == null || type2 == null) {
-			labelString.concat(type1).concat(type2);
+		Vertex vertex1 = (Vertex) graph.query().has("instanceid", com.tinkerpop.blueprints.Compare.EQUAL, instanceid1).vertices().iterator().next();
+		Vertex vertex2 = (Vertex) graph.query().has("instanceid", com.tinkerpop.blueprints.Compare.EQUAL, instanceid2).vertices().iterator().next();
+		String type1 = vertex1.getProperty("type");
+		String type2 = vertex2.getProperty("type");
+		if (Integer.parseInt(type1) < Integer.parseInt(type2)){
+//			System.out.println(type1+":"+type2);
+//			System.out.println(instanceid1+":"+instanceid2);
+			Iterator<Edge> it = vertex1.query().edges().iterator();
+//			Iterator<Edge> it = vertex1.getEdges(Direction.IN, type1+"-"+type2).iterator();
+			while(it.hasNext()){
+				Edge edge = it.next();
+				Vertex vertex3 = edge.getVertex(Direction.OUT);
+//				System.out.println(""+vertex3.getProperty("type"));
+				if ((long)vertex3.getProperty("instanceid") == instanceid2){
+					edge.remove();
+					System.out.println("Edge removed");
+				}
+			}
+		}else{
+//			System.out.println(type2+":"+type1);
+//			System.out.println(instanceid2+":"+instanceid1);
+			Iterator<Edge> it = vertex2.query().edges().iterator();
+//			Iterator<Edge> it = vertex2.getEdges(Direction.IN, type2+"-"+type1).iterator();
+			while(it.hasNext()){
+				Edge edge = it.next();
+				Vertex vertex3 = edge.getVertex(Direction.OUT);
+//				System.out.println(""+vertex3.getProperty("type"));
+				if ((long)vertex3.getProperty("instanceid") == instanceid1){
+					edge.remove();
+					System.out.println("Edge removed");
+				}
+			}
 		}
+		System.out.println("----------");
 	}
 
 	public static TitanGraph exp1(Database db, TitanGraph graph, double distance) throws Exception{
@@ -689,32 +731,40 @@ public class Graph {
 		System.out.println(dateFormat.format(date));
 		
 		// Step 1 : Clear initial graph
-//		graph = clearGraph(db, graph);
+		graph = clearGraph(db, graph);
 			
 		// Step 2 : Build Schema
-//		build_schema(graph);
+		build_schema(graph);
 		
 		// IterateEdges(graph);
 
 		// Step 3 : Initialize Graph Database
 		TitanTransaction graph1 = graph.newTransaction();
 		
-//		InitializeGraph(graph1,10000);
+		InitializeGraph(graph1,3486);
 		
-//		System.out.println("Graph initialized");
+		System.out.println("Graph initialized");
 
 		// Step 4 : Generate stats
 //		stats(graph1);
 		
 		// Step 5 : Build edges for distance threshold = 0.2
 //		addEdges(graph, 0.3);
-//		addEdgesMultiThread(graph1, 0.3);
+		addEdgesMultiThread(graph1, 0.3);
 		iterateEdges(graph1);
-//			
+
+//		long[] list_x = {1318419,1315513,3890045,1311853,1317643,1311908,7829546,1314755,1334084,1313820,1321517,1312734,1377631,1313082,1331940,1312038,1315789,1312038,5190122,1351511,1325890,1318141,1312379,1312345,1327547,1314842,1330936,1315833,1320459,1312770,1329354,1315987,1376994,1315081,1331643,1312311,1330159,1314956,1319934,1316616,1319105,1312675};
+//		for(int i = 0 ; i<list_x.length-1;i++){
+//			removeEdges(graph1, list_x[i], list_x[i+1]);
+//			i++;
+//		}
+		
+//		iterateEdges(graph1);
+		
 		date = new Date();
 		System.out.println(dateFormat.format(date));
 		
-//		// Step 6 : Explore neighbors for distance threshold = 0.2 using Edge Traversal
+		// Step 6 : Explore neighbors for distance threshold = 0.2 using Edge Traversal
 //		exploreNeighboursEdge(graph, 0.2);
 		
 		// Step 7 : Explore neighbors for distance threshold = 0.2 using Geo.WITHIN
