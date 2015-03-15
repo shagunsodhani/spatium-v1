@@ -26,7 +26,6 @@ except ImportError as exc:
 class Miner(object):
 	"""Class to implement Co-location Miner"""	
 
-
 	def __init__(self, dbname, sql_populate = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 5000", app_name = "spatium", threshold_distance=0.2, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
 		
 		self.mapping = {}
@@ -61,7 +60,7 @@ class Miner(object):
 	
 	def initialise_location(self):
 		"""To initialise location table"""
-		conn = db.connect(self.app_name, 'spatium')
+		conn = db.connect(self.app_name)
 		cursor = conn.cursor()
 		sql = "SELECT DISTINCT(primary_type) FROM dataset ORDER BY primary_type"
 		result = db.read(sql, cursor)
@@ -119,7 +118,6 @@ class Miner(object):
 
 	def initialise_instance(self):
 		"""To initialise instance table"""
-
 		sql = "select colocation, label from candidate where size = 1"
 		result = db.read(sql, self.cursor)
 		label_colocation = {}
@@ -143,9 +141,7 @@ class Miner(object):
 			db.write(sql_instance, self.cursor, self.conn)
 	
 	def colocation_2(self, type_of_pi = 1):
-
 		"""to generate colocations of size 2"""
-
 		k=2
 		table_candidate_name = "candidate"+str(k)
 		table_instance_name = "instance"+str(k)
@@ -237,7 +233,6 @@ class Miner(object):
 						db.write(sql_instance, self.cursor, self.conn)
 					
 	def colocation_k(self, k, type_of_pi=1):
-
 		"""colocation for size k using colocation for size k-1"""
 		table_candidate_name_old = "candidate"+str(k-1)
 		table_instance_name_old = "instance"+str(k-1)
@@ -395,11 +390,8 @@ class Miner(object):
 					# print sql_instance
 					db.write(sql_instance, self.cursor, self.conn)
 
-
 	def explore_neighbours(self):
-
 		"""to generate colocations of size 2"""
-
 		k=2
 		table_candidate_name = "candidate"+str(k)
 		table_instance_name = "instance"+str(k)

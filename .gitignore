@@ -1,3 +1,4 @@
+baseline/test/*
 # Taken from http://stackoverflow.com/questions/8476376/typical-gitignore-file-for-an-android-app
 
 # files for the dex VM
