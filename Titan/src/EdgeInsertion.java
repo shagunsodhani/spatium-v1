@@ -1,5 +1,7 @@
 import java.util.Iterator;
 
+import org.elasticsearch.bootstrap.Elasticsearch;
+
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -30,6 +32,7 @@ public class EdgeInsertion extends Thread{
 		double longitude = pointGeoshape.getPoint().getLongitude();
 //		long id_vertex1 = Long.parseLong(vertex.getId().toString());
 		String type = vertex.getProperty("type");
+		Elasticsearch elasticsearch = new Elasticsearch();
 		
 		for(Iterator<Vertex>iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator()
 				;	iterator2.hasNext();){
@@ -41,7 +44,7 @@ public class EdgeInsertion extends Thread{
 				Geoshape pointGeoshape2 = vertex2.getProperty("place");
 				float distance = (float)pointGeoshape.getPoint().distance(pointGeoshape2.getPoint());
 //				graph.addEdge(vertex, vertex2, type+"-"+type2)
-				Edge edge = vertex.addEdge(type+"-"+type2,vertex2);
+				Edge edge = vertex2.addEdge(type+"-"+type2,vertex);
 				edge.setProperty("distance",distance);
 				
 //				Graph.edgesMap.put(""+id_vertex1+"-"+id_vertex2, distance1);
