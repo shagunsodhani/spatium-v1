@@ -56,9 +56,8 @@ public class Colocation {
 				Map.Entry pair1 = (Map.Entry)it1.next();
 				String type2 = (String) pair1.getKey();
 				float pi = (Float) pair1.getValue();
-				
-//				System.out.println(type1+":"+type2+" = "+pi);
-				System.out.println(type1+":"+type2);
+				System.out.println(type1+":"+type2+" = "+pi);
+//				System.out.println(type1+":"+type2);
 				counter++;
 			}
 		}
@@ -507,7 +506,6 @@ public class Colocation {
 			}
 			
 			if(pi>=PI_threshold){
-				verbose = true;
 				if(verbose){
 					System.out.println("--------------");
 					System.out.println("Frequent = "+type1+":"+type2+":"+type3+" PI = "+pi);
@@ -515,8 +513,6 @@ public class Colocation {
 					System.out.println("Total_Count = "+count_type1+":"+count_type2+":"+count_type3);
 					System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
 				}
-				verbose = false;
-				
 				if(Lk.containsKey(type1+":"+type2)==false){
 					HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
 					tempHashMap.put(type3, pi);
