@@ -6,7 +6,6 @@ except ImportError as exc:
 class Compare():
 	"""Class to compare results from proposed algorithm with results from baseline algorithm for correctness"""	
 
-	# def __init__(self, dbname, sql_populate = "SELECT id, primary_type, latitude, longitude FROM dataset ORDER BY date ASC LIMIT 0, 5000", , threshold_distance=0.2, minPrevalance = 0.001, create_table = 0, kmax = 4, quiet = 0):
 	def __init__(self, app_name = "spatium", dbname = "spatium", verbose = 0):	
 		self.dbname = dbname
 		self.app_name = app_name
@@ -14,7 +13,7 @@ class Compare():
 		self.cursor = self.conn.cursor()
 		self.verbose = verbose
 
-	def compare_results_size2(self, label = 1, prosposed_results_file = "test/graph.txt"):
+	def compare_results_size2(self, label = 1, prosposed_results_file = "graph.txt"):
 		"""Compare results for size 2 from proposed algorithm and baseline method for correctness label is the `label` corresponding to size 2 """
 		D = {}
 		sql_baseline = "SELECT instanceid1, instanceid2 FROM instance2 WHERE label = "+str(label)
