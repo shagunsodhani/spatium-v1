@@ -28,7 +28,7 @@ public class Mapper{
 			System.out.println("Connection Error!!");
 		}else{
 			stmt = (Statement) connection.createStatement();
-	        String sql = "SELECT DISTINCT primary_type FROM dataset";
+	        String sql = "SELECT DISTINCT primary_type FROM dataset ORDER BY primary_type";
 	        ResultSet rs = stmt.executeQuery(sql);
 	        int count = 1;
 	        while(rs.next()){
