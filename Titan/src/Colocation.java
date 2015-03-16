@@ -392,17 +392,20 @@ public class Colocation {
 			String type3 = tempList.get(2);
 //			System.out.println(type1+":"+type2+":"+type3);
 			
-			MongoCollection<Document> coll ;
-						
+			String dbname1 = type1+":"+type2+":"+type3;
+			MongoCollection<Document> coll ;						
 			if (create_db==true){
 				
-				mongoDB new_mongoInstance = new mongoDB(type1+":"+type2+":"+type3);
+//				mongoDB new_mongoInstance = new mongoDB(type1+":"+type2+":"+type3);
+				mongoDB new_mongoInstance = new mongoDB(dbname1);
 				MongoDatabase new_mongodb = new_mongoInstance.connect();
-				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
+//				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
+				coll = new_mongodb.getCollection(dbname1);
 			}
 			// Initialize the collection A:B:C
 			else{
-				coll = mongodb.getCollection(type1+":"+type2+":"+type3);
+//				coll = mongodb.getCollection(type1+":"+type2+":"+type3);
+				coll = mongodb.getCollection(dbname1);
 			}
 					
 			Iterator<Vertex> it1 = graph.query().has("type", Compare.EQUAL, type1).vertices().iterator();
@@ -536,7 +539,8 @@ public class Colocation {
 			else{
 				coll.dropCollection();
 				if(create_db==true){
-					mongoClient.dropDatabase(type1+":"+type2+":"+type3);
+					mongoClient.dropDatabase(dbname1);
+//					mongoClient.dropDatabase(type1+":"+type2+":"+type3);
 				}
 			}
 		}
@@ -544,6 +548,7 @@ public class Colocation {
 		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
 		return Lk;
 	}
+	
 	
 	public static HashMap<String, HashMap<String, Float>> multithreaded_L3(HashSet<List<String>> Ck, int k){
 		/*
@@ -634,25 +639,42 @@ public class Colocation {
 			MongoCollection<Document> coll_1 ;
 			MongoCollection<Document> coll_2 ;
 			
+			String dbname1, dbname2, dbname3;
+			dbname1 = type1+":"+type2+":"+type3;
+			dbname2 = type1+":"+type2;
+			dbname3 = type1+":"+type3;
+					
 			if (create_db==true){
-				mongoDB new_mongoInstance = new mongoDB(type1+":"+type2+":"+type3);
-				mongoDB new_mongoInstance_1 = new mongoDB(type1+":"+type2);
-				mongoDB new_mongoInstance_2 = new mongoDB(type1+":"+type3);
+//				mongoDB new_mongoInstance = new mongoDB(type1+":"+type2+":"+type3);
+//				mongoDB new_mongoInstance_1 = new mongoDB(type1+":"+type2);
+//				mongoDB new_mongoInstance_2 = new mongoDB(type1+":"+type3);
+				
+				mongoDB new_mongoInstance = new mongoDB(dbname1);
+				mongoDB new_mongoInstance_1 = new mongoDB(dbname2);
+				mongoDB new_mongoInstance_2 = new mongoDB(dbname3);
 				
 				MongoDatabase new_mongodb = new_mongoInstance.connect();
 				MongoDatabase new_mongodb_1 = new_mongoInstance_1.connect();
 				MongoDatabase new_mongodb_2 = new_mongoInstance_2.connect();
 				
-				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
-				coll_1 = new_mongodb_1.getCollection(type1+":"+type2);
-				coll_2 = new_mongodb_2.getCollection(type1+":"+type3);
+//				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
+//				coll_1 = new_mongodb_1.getCollection(type1+":"+type2);
+//				coll_2 = new_mongodb_2.getCollection(type1+":"+type3);
+				
+				coll = new_mongodb.getCollection(dbname1);
+				coll_1 = new_mongodb_1.getCollection(dbname2);
+				coll_2 = new_mongodb_2.getCollection(dbname3);
 				
 			}
 			// Initialize the collection A:B:C
 			else{
-				coll = mongodb.getCollection(type1+":"+type2+":"+type3);
-				coll_1 = mongodb.getCollection(type1+":"+type2);
-				coll_2 = mongodb.getCollection(type1+":"+type3);
+//				coll = mongodb.getCollection(type1+":"+type2+":"+type3);
+//				coll_1 = mongodb.getCollection(type1+":"+type2);
+//				coll_2 = mongodb.getCollection(type1+":"+type3);
+				
+				coll = mongodb.getCollection(dbname1);
+				coll_1 = mongodb.getCollection(dbname2);
+				coll_2 = mongodb.getCollection(dbname3);
 			}
 			
 //			MongoCollection<Document> coll = mongodb.getCollection(type1+":"+type2+":"+type3);
@@ -710,9 +732,13 @@ public class Colocation {
 			if(ParticipationIndex < PI_threshold){
 				coll.dropCollection();
 				if(create_db==true){
-					mongoClient.dropDatabase(type1+":"+type2+":"+type3);
-					mongoClient.dropDatabase(type1+":"+type2);
-					mongoClient.dropDatabase(type1+":"+type3);
+//					mongoClient.dropDatabase(type1+":"+type2+":"+type3);
+//					mongoClient.dropDatabase(type1+":"+type2);
+//					mongoClient.dropDatabase(type1+":"+type3);
+					
+					mongoClient.dropDatabase(dbname1);
+					mongoClient.dropDatabase(dbname2);
+					mongoClient.dropDatabase(dbname3);
 				}
 			}
 			else{
