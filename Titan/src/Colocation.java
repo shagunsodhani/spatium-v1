@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.bson.Document;
 
 import com.mongodb.BasicDBObject;
@@ -31,7 +30,7 @@ public class Colocation {
 	public static double PI_threshold;
 	public static boolean verbose;
 	public static ConcurrentHashMap<List<String>,Float>  colocations;
-	public static MongoClient mongoClient = new MongoClient();
+	public static MongoClient mongoClient;
 	
 	public Colocation(){
 		this.db = new Database();
@@ -41,6 +40,7 @@ public class Colocation {
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 		mongoDB mongoInstance = new mongoDB();
+		this.mongoClient = mongoDB.mongoClient;
 		this.mongodb = mongoInstance.connect();
 	}	
 	
@@ -550,8 +550,7 @@ public class Colocation {
 		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
 		return Lk;
 	}
-	
-	
+		
 	public static HashMap<String, HashMap<String, Float>> multithreaded_L3(HashSet<List<String>> Ck, int k, boolean create_db){
 		/*
 		 * Generate colocation of size 3
@@ -744,7 +743,6 @@ public class Colocation {
 		return Lk;
 	}
 	
-
 	public static HashMap<String, HashMap<String, Float>> multithreaded_Lk(HashSet<List<String>> Ck, int k, boolean create_db){
 		
 		long time1 = System.currentTimeMillis();
@@ -792,8 +790,7 @@ public class Colocation {
 		
 		return false;
 	}
-	
-
+		
 	public static boolean areConnected(long id1, long id2) {
 		
 		Vertex vertex = graph.getVertex(id1);
@@ -830,28 +827,41 @@ public class Colocation {
 		
 		Colocation colocation = new Colocation();
 		// Total count of all size-1 colocations
-		L1();
+//		L1();
+//		
+//		HashMap<String, HashMap<String, Float>> Lk;
+//		HashSet<List<String>> Ck = new HashSet<List<String>>();
+//		
+//		for(int k = 2;k<4;k++){
+//			System.out.println("Current K is "+k);
+//			if(k==2){
+//				Lk = L2();				
+//			}else if (k==3) {
+//				Lk = L3(Ck, k, false);
+//			}else {
+//				Lk = Lk(Ck, k, false);
+//			}
+//			print_Frequent(Lk, k);
+//			Ck = join_and_prune(Lk, k);
+//			print_Candidate(Ck, k+1);
+//			
+//			if(Ck.isEmpty()){
+//				break;
+//			}
+//		}
 		
-		HashMap<String, HashMap<String, Float>> Lk;
-		HashSet<List<String>> Ck = new HashSet<List<String>>();
 		
-		for(int k = 2;k<4;k++){
-			System.out.println("Current K is "+k);
-			if(k==2){
-				Lk = L2();				
-			}else if (k==3) {
-				Lk = L3(Ck, k, false);
-			}else {
-				Lk = Lk(Ck, k, false);
-			}
-			print_Frequent(Lk, k);
-			Ck = join_and_prune(Lk, k);
-			print_Candidate(Ck, k+1);
-			
-			if(Ck.isEmpty()){
-				break;
-			}
-		}		
+		// Delete all database which contain ":" in their name
+		List<String> dbNames = mongoClient.getDatabaseNames();
+		for(int i = 0;i < dbNames.size();i++){
+			String dbName = dbNames.get(i);
+			if(dbName.contains(":")==true){
+				System.out.println("Database dropped = "+dbName);
+				mongoClient.dropDatabase(dbName);
+			}			
+		}
+		
+		
 		// Code Snippet for MongoDB
 		/*
 		MongoCollection<Document> coll = mongodb.getCollection("A:B:C");
@@ -930,7 +940,6 @@ public class Colocation {
 		System.out.println("Total lookups are = "+counter);
 		*/
 		
-//		mongodb.dropDatabase();
 		db.close(graph);
 		
 	}
