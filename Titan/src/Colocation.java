@@ -358,7 +358,7 @@ public class Colocation {
 		
 	}
 	
-	public static HashMap<String, HashMap<String, Float>> L3(HashSet<List<String>> Ck, int k, boolean create_db){
+	public static ConcurrentHashMap<String, HashMap<String,Float>> L3(HashSet<List<String>> Ck, int k, boolean create_db){
 		/*
 		 * Generate colocation of size 3
 		 */
@@ -368,7 +368,7 @@ public class Colocation {
 		}
 		long time1 = System.currentTimeMillis();
 		
-		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
+		ConcurrentHashMap<String, HashMap<String, Float>> Lk = new ConcurrentHashMap<String, HashMap<String,Float>>();
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
 		
@@ -550,7 +550,7 @@ public class Colocation {
 	}
 	
 	
-	public static HashMap<String, HashMap<String, Float>> multithreaded_L3(HashSet<List<String>> Ck, int k){
+	public static HashMap<String, HashMap<String, Float>> multithreaded_L3(HashSet<List<String>> Ck, int k, boolean create_db){
 		/*
 		 * Generate colocation of size 3
 		 */
@@ -560,45 +560,11 @@ public class Colocation {
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
 		
-		/*
-		while(it.hasNext()){
-			
-			float pi;
-			if(pi>=PI_threshold){
-				System.out.println("--------------");
-//				System.out.println("Frequent = "+type1+":"+type2+":"+type3+" PI = "+pi);
-//				System.out.println("Unique_Count = "+unique.get(type1).size()+":"+unique.get(type2).size()+":"+unique.get(type3).size());
-//				System.out.println("Total_Count = "+count_type1+":"+count_type2+":"+count_type3);
-				
-//				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
-	//
-//				MongoCursor<Document> cursor = coll.find().iterator();
-//				try {
-//				    while (cursor.hasNext()) {
-//				        System.out.println(cursor.next());
-//				    }
-//				} finally {
-//				    cursor.close();
-//				}
-				
-				
-//				if(Lk.containsKey(type1+":"+type2)==false){
-//					HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
-//					tempHashMap.put(type3, pi);
-//					Lk.put(type1+":"+type2, tempHashMap);
-//				}else{
-//					Lk.get(type1+":"+type2).put(type3, pi);
-//				}
-			}
-			else{
-//				System.out.println("In-Frequent : "+type1+":"+type2+":"+type3+" PI = "+pi);
-//				coll.dropCollection();
-			}
-			
+		while(it.hasNext()){		
 		}
-		*/
 		long time2 = System.currentTimeMillis();
 		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
+//		HashMap<String, HashMap<String, Float>> Lk;
 		return Lk;
 	}
 	
@@ -762,6 +728,27 @@ public class Colocation {
 		return Lk;
 	}
 	
+
+	public static HashMap<String, HashMap<String, Float>> multithreaded_Lk(HashSet<List<String>> Ck, int k, boolean create_db){
+		
+		long time1 = System.currentTimeMillis();
+		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
+		System.out.println("Generating Colocations of Size "+k);
+		
+		Iterator it = Ck.iterator();
+		
+		while(it.hasNext()){
+			
+		}		
+		
+		long time2 = System.currentTimeMillis();
+		System.out.println("Total time required to get frequent colocations of size "+k+" = "+(time2-time1));
+		return Lk;
+	}
+	
+
+
+
 	public static boolean areConnected(Vertex vertex1, Vertex vertex2){
 		String type1 = vertex1.getProperty("type");
 		String type2 = vertex2.getProperty("type");
@@ -793,6 +780,7 @@ public class Colocation {
 		return false;
 	}
 	
+
 	public static boolean areConnected(long id1, long id2) {
 		
 		Vertex vertex = graph.getVertex(id1);
