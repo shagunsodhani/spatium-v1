@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.bson.Document;
@@ -28,7 +30,7 @@ public class Colocation {
 	public static HashMap<String, Long> total_count; 
 	public static double PI_threshold;
 	public static boolean verbose;
-	public static ConcurrentHashMap<List<String>,Double>  colocations;
+	public static ConcurrentHashMap<List<String>,Float>  colocations;
 	public static MongoClient mongoClient = new MongoClient();
 	
 	public Colocation(){
@@ -37,7 +39,7 @@ public class Colocation {
 		this.total_count = new HashMap<String, Long>();
 		this.PI_threshold = 0.1;
 		this.verbose = false;
-		this.colocations = new ConcurrentHashMap<List<String>,Double>();
+		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 		mongoDB mongoInstance = new mongoDB();
 		this.mongodb = mongoInstance.connect();
 	}	
@@ -358,7 +360,7 @@ public class Colocation {
 		
 	}
 	
-	public static ConcurrentHashMap<String, HashMap<String,Float>> L3(HashSet<List<String>> Ck, int k, boolean create_db){
+	public static HashMap<String, HashMap<String,Float>> L3(HashSet<List<String>> Ck, int k, boolean create_db){
 		/*
 		 * Generate colocation of size 3
 		 */
@@ -368,7 +370,7 @@ public class Colocation {
 		}
 		long time1 = System.currentTimeMillis();
 		
-		ConcurrentHashMap<String, HashMap<String, Float>> Lk = new ConcurrentHashMap<String, HashMap<String,Float>>();
+		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
 		
@@ -560,8 +562,20 @@ public class Colocation {
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
 		
-		while(it.hasNext()){		
+		ExecutorService executorService = Executors.newFixedThreadPool(10);
+		
+		while(it.hasNext()){
+			ValidateCandidate validateCandidate = new ValidateCandidate((List<String>) it.next(), k, create_db);
+			executorService.execute(validateCandidate);
 		}
+		executorService.shutdown();
+//		executorService.awaitTermination(120, TimeUnit.SECONDS);
+		while(!executorService.isTerminated()){
+			;
+		}
+		System.out.println("All the threads terminated successfully");
+		
+		
 		long time2 = System.currentTimeMillis();
 		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
 //		HashMap<String, HashMap<String, Float>> Lk;
@@ -618,7 +632,8 @@ public class Colocation {
 				mongoDB new_mongoInstance = new mongoDB(dbname1);
 				mongoDB new_mongoInstance_1 = new mongoDB(dbname2);
 				mongoDB new_mongoInstance_2 = new mongoDB(dbname3);
-				
+		
+
 				MongoDatabase new_mongodb = new_mongoInstance.connect();
 				MongoDatabase new_mongodb_1 = new_mongoInstance_1.connect();
 				MongoDatabase new_mongodb_2 = new_mongoInstance_2.connect();
@@ -696,15 +711,16 @@ public class Colocation {
 				}
 			}
 			if(ParticipationIndex < PI_threshold){
-				coll.dropCollection();
+				
 				if(create_db==true){
 //					mongoClient.dropDatabase(type1+":"+type2+":"+type3);
 //					mongoClient.dropDatabase(type1+":"+type2);
 //					mongoClient.dropDatabase(type1+":"+type3);
-					
+				
 					mongoClient.dropDatabase(dbname1);
-					mongoClient.dropDatabase(dbname2);
-					mongoClient.dropDatabase(dbname3);
+				}
+				else{
+					coll.dropCollection();
 				}
 			}
 			else{
@@ -745,9 +761,6 @@ public class Colocation {
 		System.out.println("Total time required to get frequent colocations of size "+k+" = "+(time2-time1));
 		return Lk;
 	}
-	
-
-
 
 	public static boolean areConnected(Vertex vertex1, Vertex vertex2){
 		String type1 = vertex1.getProperty("type");
@@ -822,7 +835,7 @@ public class Colocation {
 		HashMap<String, HashMap<String, Float>> Lk;
 		HashSet<List<String>> Ck = new HashSet<List<String>>();
 		
-		for(int k = 2;;k++){
+		for(int k = 2;k<4;k++){
 			System.out.println("Current K is "+k);
 			if(k==2){
 				Lk = L2();				

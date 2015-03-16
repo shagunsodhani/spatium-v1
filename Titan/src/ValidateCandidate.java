@@ -3,37 +3,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.bson.Document;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
-
-import org.bson.Document;
-
-import com.mongodb.BasicDBObject;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.blueprints.Compare;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 public class ValidateCandidate extends Thread{
@@ -59,7 +37,15 @@ public class ValidateCandidate extends Thread{
 	}
 	
 	public void run() {
-		
+		if(k>3){
+			Lk();
+		}
+		else {
+			L3();
+		}
+	}
+	
+	public void L3(){
 		int total_cliques = 0;
 		HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
 		for(int i=0;i<tempList.size();i++){
@@ -74,7 +60,10 @@ public class ValidateCandidate extends Thread{
 		String type3 = tempList.get(2);
 		
 		String dbname1 = type1+":"+type2+":"+type3;
-		MongoCollection<Document> coll ;						
+		System.out.println(dbname1);
+		
+		MongoCollection<Document> coll ;
+//		MongoDatabase new_mongodb;
 		if (create_db==true){
 			mongoDB new_mongoInstance = new mongoDB(dbname1);
 			MongoDatabase new_mongodb = new_mongoInstance.connect();
@@ -151,24 +140,21 @@ public class ValidateCandidate extends Thread{
 				System.out.println("Total_Count = "+count_type1+":"+count_type2+":"+count_type3);
 				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
 			}
-			if(Lk.containsKey(type1+":"+type2)==false){
-				HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
-				tempHashMap.put(type3, pi);
-				Lk.put(type1+":"+type2, tempHashMap);
-			}else{
-				Lk.get(type1+":"+type2).put(type3, pi);
-			}
+			Colocation.colocations.put(tempList, pi);
 		}
 		else{
-			coll.dropCollection();
 			if(create_db==true){
+//				new_mongodb.dropDatabase();
 				Colocation.mongoClient.dropDatabase(dbname1);
 //				mongoClient.dropDatabase(type1+":"+type2+":"+type3);
+			}
+			else{
+				coll.dropCollection();
 			}
 		}
 	}
 	
-	public void run_L3() {
+	public void Lk() {
 		
 		HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
 		for(int i=0;i<tempList.size();i++){
@@ -264,24 +250,15 @@ public class ValidateCandidate extends Thread{
 			}
 		}
 		if(ParticipationIndex < PI_threshold){
-			coll.dropCollection();
 			if(create_db==true){
 				Colocation.mongoClient.dropDatabase(dbname1);
-				Colocation.mongoClient.dropDatabase(dbname2);
-				Colocation.mongoClient.dropDatabase(dbname3);
+			}
+			else{
+				coll.dropCollection();
 			}
 		}
 		else{
-			if(Lk.containsKey(type1+":"+type2)==false){
-				HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
-				tempHashMap.put(type3, ParticipationIndex);
-				Lk.put(type1+":"+type2, tempHashMap);
-			}else{
-				Lk.get(type1+":"+type2).put(type3, ParticipationIndex);
-			}
-		}			
-					
+			Colocation.colocations.put(tempList, ParticipationIndex);
+		}					
 	}
 }
-
-
