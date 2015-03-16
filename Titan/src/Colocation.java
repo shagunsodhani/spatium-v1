@@ -6,9 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.bson.Document;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -27,6 +29,7 @@ public class Colocation {
 	public static double PI_threshold;
 	public static boolean verbose;
 	public static ConcurrentHashMap<List<String>,Double>  colocations;
+	public static MongoClient mongoClient = new MongoClient();
 	
 	public Colocation(){
 		this.db = new Database();
@@ -355,7 +358,7 @@ public class Colocation {
 		
 	}
 	
-	public static HashMap<String, HashMap<String, Float>> L3(HashSet<List<String>> Ck, int k){
+	public static HashMap<String, HashMap<String, Float>> L3(HashSet<List<String>> Ck, int k, boolean create_db){
 		/*
 		 * Generate colocation of size 3
 		 */
@@ -389,9 +392,18 @@ public class Colocation {
 			String type3 = tempList.get(2);
 //			System.out.println(type1+":"+type2+":"+type3);
 			
+			MongoCollection<Document> coll ;
+						
+			if (create_db==true){
+				
+				mongoDB new_mongoInstance = new mongoDB(type1+":"+type2+":"+type3);
+				MongoDatabase new_mongodb = new_mongoInstance.connect();
+				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
+			}
 			// Initialize the collection A:B:C
-			MongoCollection<Document> coll = mongodb.getCollection(type1+":"+type2+":"+type3);
-
+			else{
+				coll = mongodb.getCollection(type1+":"+type2+":"+type3);
+			}
 					
 			Iterator<Vertex> it1 = graph.query().has("type", Compare.EQUAL, type1).vertices().iterator();
 			while(it1.hasNext()){
@@ -523,6 +535,9 @@ public class Colocation {
 			}
 			else{
 				coll.dropCollection();
+				if(create_db==true){
+					mongoClient.dropDatabase(type1+":"+type2+":"+type3);
+				}
 			}
 		}
 		long time2 = System.currentTimeMillis();
@@ -610,7 +625,7 @@ public class Colocation {
 			String type2 = tempList.get(k-2);
 			String type3 = tempList.get(k-1);
 			
-//			System.out.println(type1+":"+type2+":"+type3);
+			System.out.println(type1+":"+type2+":"+type3);
 			
 			// Initilize the collection A:B:C...k-terms
 			MongoCollection<Document> coll = mongodb.getCollection(type1+":"+type2+":"+type3);
@@ -768,7 +783,7 @@ public class Colocation {
 			if(k==2){
 				Lk = L2();				
 			}else if (k==3) {
-				Lk = L3(Ck, k);
+				Lk = L3(Ck, k, false);
 			}else {
 				Lk = Lk(Ck, k);
 			}
