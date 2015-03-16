@@ -3,9 +3,29 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.bson.Document;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Compare;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
 
 import org.bson.Document;
-import org.elasticsearch.search.suggest.phrase.DirectCandidateGenerator.Candidate;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoCollection;
@@ -13,8 +33,8 @@ import com.mongodb.client.MongoDatabase;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-
 
 public class ValidateCandidate extends Thread{
 	
@@ -25,8 +45,9 @@ public class ValidateCandidate extends Thread{
 	private double PI_threshold;
 	private boolean verbose;
 	private int k;
-
-	public ValidateCandidate(List<String> candidate, int k) {
+	private boolean create_db;
+	
+	public ValidateCandidate(List<String> candidate, int k, boolean created_db) {
 		this.tempList = candidate;
 		this.mongodb = Colocation.mongodb;
 		this.graph = Colocation.graph;
@@ -34,83 +55,72 @@ public class ValidateCandidate extends Thread{
 		this.PI_threshold = Colocation.PI_threshold;
 		this.verbose = Colocation.verbose;
 		this.k = k;
+		this.create_db = created_db;
 	}
 	
 	public void run() {
 		
 		int total_cliques = 0;
 		HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
-		String databaseName = "";
-		
-		for(int i=0; i < tempList.size(); i++){
+		for(int i=0;i<tempList.size();i++){
 			String key = tempList.get(i);
-			
 			if(unique.containsKey(key)==false){
 				HashSet<Long> tempHashSet = new HashSet<Long>();
 				unique.put(key, tempHashSet);
 			}
-			databaseName += key+":";
 		}
-		databaseName = databaseName.substring(0, databaseName.length()-1);
-		mongoDB mongoInstance = new mongoDB(databaseName);
-		MongoDatabase mongoDatabase = mongoInstance.connect();
-				
-		String type1 = "";
-		int i, j;
-		for(i = 0; i < k-2; i++){
-			type1 += tempList.get(i)+":";
+		String type1 = tempList.get(0);
+		String type2 = tempList.get(1);
+		String type3 = tempList.get(2);
+		
+		String dbname1 = type1+":"+type2+":"+type3;
+		MongoCollection<Document> coll ;						
+		if (create_db==true){
+			mongoDB new_mongoInstance = new mongoDB(dbname1);
+			MongoDatabase new_mongodb = new_mongoInstance.connect();
+			coll = new_mongodb.getCollection(dbname1);
 		}
-		type1 = type1.substring(0, type1.length()-1);
-		String type2 = tempList.get(k-2);
-		String type3 = tempList.get(k-1);
-
-		// Initialize the collection A:B:C
-		MongoCollection<Document> coll =  mongoDatabase.getCollection(type1+":"+type2+":"+type3);
+		else{
+			coll = mongodb.getCollection(dbname1);
+		}
 				
 		Iterator<Vertex> it1 = graph.query().has("type", Compare.EQUAL, type1).vertices().iterator();
 		while(it1.hasNext()){
-			
 			Vertex vertex1 = it1.next();
 			long id1 = (long) vertex1.getId();
-			
-			Iterator<Vertex> it2 = vertex1.getVertices(Direction.OUT, type1+"-"+type2).iterator();
-							
-			while (it2.hasNext()) {
-				Vertex vertex2 = (Vertex) it2.next();
-				long id2 = (long) vertex2.getId();
-			
-				Iterator<Vertex> it3 = vertex1.getVertices(Direction.OUT, type1+"-"+type3).iterator();
-				while (it3.hasNext()) {
-					Vertex vertex3 = (Vertex) it3.next();
-					long id3 = (long) vertex3.getId();
-					
-					if(Colocation.areConnected(id2, id3)==true){
-						
-						if(unique.get(type1).contains(id1)==false){
-							unique.get(type1).add(id1);
-						}
-						if(unique.get(type2).contains(id2)==false){
-							unique.get(type2).add(id2);
-						}
-						if(unique.get(type3).contains(id3)==false){
-							unique.get(type3).add(id3);
-						}
-						
-						BasicDBObject searchQuery = new BasicDBObject().append("key", id1+":"+id2);
-						
-						if(coll.find(searchQuery).first()!=null){
-							Document result = coll.find(searchQuery).first();
-							List<Long> documents = (List<Long>) result.get("value");
-							documents.add(id3);
-							coll.replaceOne(searchQuery, result);
-						}else{
-							List<Long> tempList2 = new ArrayList<Long>();
-							tempList2.add(id3);
-							coll.insertOne(new Document("value", tempList2).append("key", id1+":"+id2));
-						}
+			List<Long> v2 = new ArrayList<Long>();
+			List<Long> v3 = new ArrayList<Long>();
+			boolean flag_outer = false;
+			Iterator<Vertex> it2 = vertex1.getVertices(Direction.IN, type1+"-"+type2).iterator();
+			while(it2.hasNext()){
+				Vertex vertex2 = it2.next();
+				v2.add((long) vertex2.getProperty("id"));
+			}
+			Iterator<Vertex> it3 = vertex1.getVertices(Direction.IN, type1+"-"+type3).iterator();
+			while(it3.hasNext()){
+				Vertex vertex3 = it3.next();
+				v3.add((long) vertex3.getProperty("id"));
+			}
+			for(int i =0 ; i < v2.size();i++){
+				boolean flag_inner = false;
+				List<Long> temp_list = new ArrayList<Long>();
+
+				for(int j =0; j < v3.size(); j++){
+						if(Colocation.areConnected(v2.get(i), v3.get(j))==true){
+						unique.get(type3).add(v3.get(j));
+						temp_list.add(v3.get(j));
+						flag_inner = true;
 						total_cliques++;
 					}
 				}
+				if(flag_inner == true){
+					unique.get(type2).add((v2.get(i)));
+					flag_outer = true;
+					coll.insertOne(new Document("value", temp_list).append("key", id1+":"+v2.get(i)));
+				}
+			}
+			if(flag_outer == true){
+				unique.get(type1).add(id1);
 			}
 		}
 		float count_type1 = total_count.get(type1);
@@ -132,16 +142,31 @@ public class ValidateCandidate extends Thread{
 				pi = pr_type3;
 			}
 		}
-		if(pi >= PI_threshold){
-			System.out.println(type1+":"+type2+":"+type3+" => "+pi);
-			Colocation.colocations.put(tempList, (double) pi);
-			
-			mongoDatabase.dropDatabase();
-		}else{
-			mongoDatabase.dropDatabase();
-		}
 		
+		if(pi>=PI_threshold){
+			if(verbose){
+				System.out.println("--------------");
+				System.out.println("Frequent = "+type1+":"+type2+":"+type3+" PI = "+pi);
+				System.out.println("Unique_Count = "+unique.get(type1).size()+":"+unique.get(type2).size()+":"+unique.get(type3).size());
+				System.out.println("Total_Count = "+count_type1+":"+count_type2+":"+count_type3);
+				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
+			}
+			if(Lk.containsKey(type1+":"+type2)==false){
+				HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
+				tempHashMap.put(type3, pi);
+				Lk.put(type1+":"+type2, tempHashMap);
+			}else{
+				Lk.get(type1+":"+type2).put(type3, pi);
+			}
+		}
+		else{
+			coll.dropCollection();
+			if(create_db==true){
+				Colocation.mongoClient.dropDatabase(dbname1);
+//				mongoClient.dropDatabase(type1+":"+type2+":"+type3);
+			}
+		}
 	}
-	
-
 }
+
+
