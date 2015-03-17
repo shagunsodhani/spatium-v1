@@ -17,7 +17,8 @@ import com.mongodb.client.MongoDatabase;
  */
 public class mongoDB {
 	
-	static String HOSTNAME,DATABASE,PORT;
+	static String HOSTNAME,PORT;
+	String DATABASE;
 	public static MongoClient mongoClient;
 	
 	public mongoDB(){
@@ -68,10 +69,12 @@ public class mongoDB {
 		PORT = prop.getProperty("mongoDB.port");
 	}
 	
-	public MongoDatabase connect(){
+	public MongoDatabase connect(boolean verbose){
 				
 		MongoDatabase db = mongoClient.getDatabase(DATABASE);
-		System.out.println("Connection opened with MongoDB database named "+DATABASE);
+		if(verbose==true){
+			System.out.println("Connection opened with MongoDB database named "+DATABASE);
+		}		
 		return db;
 	}
 	
