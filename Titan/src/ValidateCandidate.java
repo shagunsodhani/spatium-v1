@@ -60,13 +60,12 @@ public class ValidateCandidate extends Thread{
 		String type3 = tempList.get(2);
 		
 		String dbname1 = type1+":"+type2+":"+type3;
-		System.out.println(dbname1);
 		
 		MongoCollection<Document> coll ;
 //		MongoDatabase new_mongodb;
 		if (create_db==true){
 			mongoDB new_mongoInstance = new mongoDB(dbname1);
-			MongoDatabase new_mongodb = new_mongoInstance.connect();
+			MongoDatabase new_mongodb = new_mongoInstance.connect(false);
 			coll = new_mongodb.getCollection(dbname1);
 		}
 		else{
@@ -174,8 +173,6 @@ public class ValidateCandidate extends Thread{
 		String type2 = tempList.get(k-2);
 		String type3 = tempList.get(k-1);
 		
-		System.out.println(type1+":"+type2+":"+type3);
-		
 		MongoCollection<Document> coll ;
 		MongoCollection<Document> coll_1 ;
 		MongoCollection<Document> coll_2 ;
@@ -184,15 +181,16 @@ public class ValidateCandidate extends Thread{
 		dbname1 = type1+":"+type2+":"+type3;
 		dbname2 = type1+":"+type2;
 		dbname3 = type1+":"+type3;
-				
+//		System.out.println(dbname1+"----"+dbname2+"-----"+dbname3);
+		
 		if (create_db==true){
 			mongoDB new_mongoInstance = new mongoDB(dbname1);
 			mongoDB new_mongoInstance_1 = new mongoDB(dbname2);
 			mongoDB new_mongoInstance_2 = new mongoDB(dbname3);
 			
-			MongoDatabase new_mongodb = new_mongoInstance.connect();
-			MongoDatabase new_mongodb_1 = new_mongoInstance_1.connect();
-			MongoDatabase new_mongodb_2 = new_mongoInstance_2.connect();
+			MongoDatabase new_mongodb = new_mongoInstance.connect(false);
+			MongoDatabase new_mongodb_1 = new_mongoInstance_1.connect(false);
+			MongoDatabase new_mongodb_2 = new_mongoInstance_2.connect(false);
 			
 			coll = new_mongodb.getCollection(dbname1);
 			coll_1 = new_mongodb_1.getCollection(dbname2);
