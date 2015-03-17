@@ -41,7 +41,7 @@ public class Colocation {
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 		mongoDB mongoInstance = new mongoDB();
 		this.mongoClient = mongoDB.mongoClient;
-		this.mongodb = mongoInstance.connect();
+		this.mongodb = mongoInstance.connect(true);
 	}	
 	
 	public static void print_Frequent(HashMap<String, HashMap<String, Float>> Lk, int k){
@@ -400,7 +400,7 @@ public class Colocation {
 				
 //				mongoDB new_mongoInstance = new mongoDB(type1+":"+type2+":"+type3);
 				mongoDB new_mongoInstance = new mongoDB(dbname1);
-				MongoDatabase new_mongodb = new_mongoInstance.connect();
+				MongoDatabase new_mongodb = new_mongoInstance.connect(false);
 //				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
 				coll = new_mongodb.getCollection(dbname1);
 			}
@@ -561,7 +561,7 @@ public class Colocation {
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
 		
-		ExecutorService executorService = Executors.newFixedThreadPool(10);
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
 		
 		while(it.hasNext()){
 			ValidateCandidate validateCandidate = new ValidateCandidate((List<String>) it.next(), k, create_db);
@@ -574,10 +574,34 @@ public class Colocation {
 		}
 		System.out.println("All the threads terminated successfully");
 		
+//		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 		
+		it = colocations.entrySet().iterator();
+		
+				
+		while(it.hasNext()){
+			Map.Entry<List<String>, Float> pairs = (Map.Entry<List<String>, Float>) it.next();
+			List<String> tempList = (List<String>) pairs.getKey();
+			String type1 = "";
+			int i, j;
+			for(i = 0; i < k-2; i++){
+				type1 += tempList.get(i)+":";
+			}
+			type1 = type1.substring(0, type1.length()-1);
+			String type2 = tempList.get(k-2);
+			String type3 = tempList.get(k-1);
+			
+			if(Lk.containsKey(type1+":"+type2)==false){
+				HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
+				tempHashMap.put(type3, pairs.getValue());
+				Lk.put(type1+":"+type2, tempHashMap);
+			}else{
+				Lk.get(type1+":"+type2).put(type3, pairs.getValue());
+			}			
+		}
+		colocations.clear();
 		long time2 = System.currentTimeMillis();
 		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
-//		HashMap<String, HashMap<String, Float>> Lk;
 		return Lk;
 	}
 	
@@ -633,9 +657,9 @@ public class Colocation {
 				mongoDB new_mongoInstance_2 = new mongoDB(dbname3);
 		
 
-				MongoDatabase new_mongodb = new_mongoInstance.connect();
-				MongoDatabase new_mongodb_1 = new_mongoInstance_1.connect();
-				MongoDatabase new_mongodb_2 = new_mongoInstance_2.connect();
+				MongoDatabase new_mongodb = new_mongoInstance.connect(false);
+				MongoDatabase new_mongodb_1 = new_mongoInstance_1.connect(false);
+				MongoDatabase new_mongodb_2 = new_mongoInstance_2.connect(false);
 				
 //				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
 //				coll_1 = new_mongodb_1.getCollection(type1+":"+type2);
@@ -750,7 +774,6 @@ public class Colocation {
 		System.out.println("Generating Colocations of Size "+k);
 		
 		Iterator it = Ck.iterator();
-		
 		while(it.hasNext()){
 			
 		}		
@@ -826,32 +849,6 @@ public class Colocation {
 	public static void main(String[] args) {
 		
 		Colocation colocation = new Colocation();
-		// Total count of all size-1 colocations
-//		L1();
-//		
-//		HashMap<String, HashMap<String, Float>> Lk;
-//		HashSet<List<String>> Ck = new HashSet<List<String>>();
-//		
-//		for(int k = 2;k<4;k++){
-//			System.out.println("Current K is "+k);
-//			if(k==2){
-//				Lk = L2();				
-//			}else if (k==3) {
-//				Lk = L3(Ck, k, false);
-//			}else {
-//				Lk = Lk(Ck, k, false);
-//			}
-//			print_Frequent(Lk, k);
-//			Ck = join_and_prune(Lk, k);
-//			print_Candidate(Ck, k+1);
-//			
-//			if(Ck.isEmpty()){
-//				break;
-//			}
-//		}
-		
-		
-		// Delete all database which contain ":" in their name
 		List<String> dbNames = mongoClient.getDatabaseNames();
 		for(int i = 0;i < dbNames.size();i++){
 			String dbName = dbNames.get(i);
@@ -860,7 +857,43 @@ public class Colocation {
 				mongoClient.dropDatabase(dbName);
 			}			
 		}
+		// Total count of all size-1 colocations
+		L1();
 		
+		HashMap<String, HashMap<String, Float>> Lk;
+		HashSet<List<String>> Ck = new HashSet<List<String>>();
+		
+		for(int k = 2;;k++){
+			System.out.println("Current K is "+k);
+			if(k==2){
+				Lk = L2();				
+			}else if (k==3) {
+				Lk = multithreaded_L3(Ck, k, true);
+//				L3(Ck, k, false);
+			}else {
+				Lk = multithreaded_L3(Ck, k, true);
+//				Lk = Lk(Ck, k, false);
+			}
+			print_Frequent(Lk, k);
+			Ck = join_and_prune(Lk, k);
+			print_Candidate(Ck, k+1);
+			
+			if(Ck.isEmpty()){
+				break;
+			}
+		}
+		
+		
+//		 Delete all database which contain ":" in their name
+//		List<String> dbNames1 = mongoClient.getDatabaseNames();
+//		for(int i = 0;i < dbNames1.size();i++){
+//			String dbName = dbNames1.get(i);
+//			if(dbName.contains(":")==true){
+//				System.out.println("Database dropped = "+dbName);
+//				mongoClient.dropDatabase(dbName);
+//			}			
+//		}
+//		
 		
 		// Code Snippet for MongoDB
 		/*
