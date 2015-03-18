@@ -729,36 +729,38 @@ public class Graph {
 		TitanGraph graph = db.connect();
 		
 		System.out.println(dateFormat.format(date));
+//		boolean clean = false, initialize = false, addEdges = true;
+		boolean clean = true, initialize = true, addEdges = false;
+		int no_of_instances = 1000;
+		double distance_threshold = 0.3;
 		
-		// Step 1 : Clear initial graph
-		graph = clearGraph(db, graph);
-			
-		// Step 2 : Build Schema
-		build_schema(graph);
-		
-		// IterateEdges(graph);
-
-		// Step 3 : Initialize Graph Database
-		TitanTransaction graph1 = graph.newTransaction();
-		
-		InitializeGraph(graph1,3486);
-		
-		System.out.println("Graph initialized");
+		if(clean){
+			// Step 1 : Clear initial graph
+			graph = clearGraph(db, graph);
+				
+			// Step 2 : Build Schema
+			build_schema(graph);
+		}
+		if(initialize){
+			// Step 3 : Initialize Graph Database
+			TitanTransaction graph1 = graph.newTransaction();
+			InitializeGraph(graph1,1000);
+			System.out.println("Graph initialized");
+			graph1.commit();
+		}
+		if(addEdges){
+			// Step 4 : Build edges for some distance threshold
+			TitanTransaction graph1 = graph.newTransaction();
+			addEdgesMultiThread(graph1, distance_threshold);
+			graph1.commit();
+		}
 
 		// Step 4 : Generate stats
 //		stats(graph1);
 		
-		// Step 5 : Build edges for distance threshold = 0.2
-//		addEdges(graph, 0.3);
-		addEdgesMultiThread(graph1, 0.3);
-		iterateEdges(graph1);
-
-//		long[] list_x = {1318419,1315513,3890045,1311853,1317643,1311908,7829546,1314755,1334084,1313820,1321517,1312734,1377631,1313082,1331940,1312038,1315789,1312038,5190122,1351511,1325890,1318141,1312379,1312345,1327547,1314842,1330936,1315833,1320459,1312770,1329354,1315987,1376994,1315081,1331643,1312311,1330159,1314956,1319934,1316616,1319105,1312675};
-//		for(int i = 0 ; i<list_x.length-1;i++){
-//			removeEdges(graph1, list_x[i], list_x[i+1]);
-//			i++;
-//		}
 		
+//		addEdges(graph, 0.3);
+		iterateEdges(graph);
 //		iterateEdges(graph1);
 		
 		date = new Date();
@@ -775,8 +777,6 @@ public class Graph {
 //		exploreNeighboursGeo(graph, 0.2);
 //		exploreNeighboursGeoMultiThread(graph, 0.2);
 		
-		graph1.commit();
-
 		// Step 8 : Close Graph Database Connection
 		db.close(graph);
 	}
