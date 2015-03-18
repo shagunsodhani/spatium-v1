@@ -6,6 +6,7 @@ import java.util.List;
 import org.bson.Document;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.MongoCursorNotFoundException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -202,61 +203,67 @@ public class ValidateCandidate extends Thread{
 			coll_1 = mongodb.getCollection(dbname2);
 			coll_2 = mongodb.getCollection(dbname3);
 		}
-		
-		MongoCursor<Document> cursor_1 = coll_1.find().iterator();
-		while (cursor_1.hasNext()) {
-				Document doc_1 = cursor_1.next();
-				String id1ist = doc_1.getString("key");
-				BasicDBObject searchQuery = new BasicDBObject().append("key", id1ist);
-				
-				if(coll_2.find(searchQuery).first()!=null){
+		try {
+			MongoCursor<Document> cursor_1 = coll_1.find().iterator();
+			while (cursor_1.hasNext()) {
+					Document doc_1 = cursor_1.next();
+					String id1ist = doc_1.getString("key");
+					BasicDBObject searchQuery = new BasicDBObject().append("key", id1ist);
 					
-					Document doc_2 = coll_2.find(searchQuery).first();
-					List<Long> doc_1_value =  (List<Long>) doc_1.get("value");
-					List<Long> doc_2_value =  (List<Long>) doc_2.get("value");
-					boolean flag_outer = false;
-					for (i = 0; i < doc_1_value.size(); i++) {
-						boolean flag_inner = false;
-						List<Long> temp_list = new ArrayList<Long>();
-						for (j=0; j<doc_2_value.size(); j++){
-							if(Colocation.areConnected(doc_1_value.get(i), doc_2_value.get(j))){
-								flag_inner = true;
-								unique.get(type3).add((doc_2_value.get(j)));
-								temp_list.add(doc_2_value.get(j));
-							}	
+					if(coll_2.find(searchQuery).first()!=null){
+						
+						Document doc_2 = coll_2.find(searchQuery).first();
+						List<Long> doc_1_value =  (List<Long>) doc_1.get("value");
+						List<Long> doc_2_value =  (List<Long>) doc_2.get("value");
+						boolean flag_outer = false;
+						for (i = 0; i < doc_1_value.size(); i++) {
+							boolean flag_inner = false;
+							List<Long> temp_list = new ArrayList<Long>();
+							for (j=0; j<doc_2_value.size(); j++){
+								if(Colocation.areConnected(doc_1_value.get(i), doc_2_value.get(j))){
+									flag_inner = true;
+									unique.get(type3).add((doc_2_value.get(j)));
+									temp_list.add(doc_2_value.get(j));
+								}	
+							}
+							if(flag_inner == true){
+								unique.get(type2).add((doc_1_value.get(i)));
+								flag_outer = true;
+								coll.insertOne(new Document("value", temp_list).append("key", id1ist+":"+doc_1_value.get(i)));
+							}
 						}
-						if(flag_inner == true){
-							unique.get(type2).add((doc_1_value.get(i)));
-							flag_outer = true;
-							coll.insertOne(new Document("value", temp_list).append("key", id1ist+":"+doc_1_value.get(i)));
+						if(flag_outer ==  true){
+							for(int x = 0; x < k-2; x++){
+								unique.get(tempList.get(x)).add(Long.parseLong(id1ist.split(":")[x]));
+							}
 						}
 					}
-					if(flag_outer ==  true){
-						for(int x = 0; x < k-2; x++){
-							unique.get(tempList.get(x)).add(Long.parseLong(id1ist.split(":")[x]));
-						}
-					}
-				}
-		}
-		
-		float ParticipationIndex = (float)1.0;
-		for (int x = 0; x < tempList.size(); x++) {
-			float ParticipationRatio = unique.get(tempList.get(x)).size()/((float)total_count.get(tempList.get(x))); 
-			if(ParticipationIndex > ParticipationRatio)
-			{
-				ParticipationIndex = ParticipationRatio;
 			}
+		} catch (MongoCursorNotFoundException exception) {
+			// TODO: handle exception
+			System.out.println("Cursor Not Found Exception "+dbname2+" and other colocations are "+dbname1+" and "+dbname2);
 		}
-		if(ParticipationIndex < PI_threshold){
-			if(create_db==true){
-				Colocation.mongoClient.dropDatabase(dbname1);
+		finally{
+			float ParticipationIndex = (float)1.0;
+			for (int x = 0; x < tempList.size(); x++) {
+				float ParticipationRatio = unique.get(tempList.get(x)).size()/((float)total_count.get(tempList.get(x))); 
+				if(ParticipationIndex > ParticipationRatio)
+				{
+					ParticipationIndex = ParticipationRatio;
+				}
+			}
+			if(ParticipationIndex < PI_threshold){
+				if(create_db==true){
+					Colocation.mongoClient.dropDatabase(dbname1);
+				}
+				else{
+					coll.dropCollection();
+				}
 			}
 			else{
-				coll.dropCollection();
-			}
-		}
-		else{
-			Colocation.colocations.put(tempList, ParticipationIndex);
-		}					
+				Colocation.colocations.put(tempList, ParticipationIndex);
+			}		
+		}		
+					
 	}
 }
