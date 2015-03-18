@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
 import org.bson.Document;
 
 import com.mongodb.BasicDBObject;
@@ -16,6 +17,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -36,7 +38,7 @@ public class Colocation {
 		this.db = new Database();
 		this.graph = this.db.connect();
 		this.total_count = new HashMap<String, Long>();
-		this.PI_threshold = 0.1;
+		this.PI_threshold = 0.5;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 		mongoDB mongoInstance = new mongoDB();
@@ -845,10 +847,83 @@ public class Colocation {
 		return false;
 	}
 	
+	public void verify_areConnected(){
+		// Code to verify that areConnected() method is correctly
+		MongoCollection<Document> coll = mongodb.getCollection("Id_latlong");
+
+		List<Long> idsList = new ArrayList<Long>();
+		for(Iterator<Vertex> it = graph.getVertices().iterator(); it.hasNext();){
+			Vertex vertex = it.next();
+			idsList.add((long)vertex.getId());
+			Document doc = new Document("id",vertex.getId()).append("lat", ((Geoshape)vertex.getProperty("place")).getPoint().getLatitude()).append("long", ((Geoshape)vertex.getProperty("place")).getPoint().getLongitude());
+			coll.insertOne(doc);
+		}
+				
+		int counter = 0;
+		System.out.println("Total vertices = "+idsList.size());
+		System.out.println("Total lookups are = "+counter);
+
+	}
+	
+	public void mongoDB_example(){
+		// Code Snippet for MongoDB
+				MongoCollection<Document> coll = mongodb.getCollection("A:B:C");
+				
+				for(int i=0;i<5;i++){
+					for(int j = 0;j<5;j++){
+//						BasicDBObject query = new BasicDBObject(i+":"+j, new BasicDBObject("$exists",true));
+						BasicDBObject searchQuery = new BasicDBObject().append("key", i+":"+j);
+						
+//						Document result = coll.find(query).first();
+//						System.out.println(result+"            "+result.get("_id"));
+//						Document documents = (Document) result.get(i+":"+j);
+//						System.out.println(documents);
+
+						for(int k = 0;k<10;k++){
+							if(coll.find(searchQuery).first()!=null){
+								Document result = coll.find(searchQuery).first();
+//								Document documents = (Document) result.get("value");
+								List<Long> documents = (List<Long>) result.get("value");
+								documents.add((long) k);
+								coll.replaceOne(searchQuery, result);
+								
+//								if(documents.containsKey(""+k)==false){
+//									documents.put(""+k, 1);
+//									coll.replaceOne(searchQuery, result);
+//								}
+							}else{
+								System.out.println(i+":"+j);
+								List<Long> tempList = new ArrayList<Long>();
+								tempList.add((long) k);
+								coll.insertOne(new Document("value", tempList).append("key", i+":"+j));
+//								coll.replaceOne(query, result);
+							}					
+						}
+//						System.out.println(documents);
+//						System.out.println(result);
+					}
+				}
+				System.out.println("Total Count = "+coll.count());
+
+				MongoCursor<Document> cursor = coll.find().iterator();
+				try {
+				    while (cursor.hasNext()) {
+				        System.out.println(cursor.next());
+				    }
+				} finally {
+				    cursor.close();
+				}
+				
+				coll.dropCollection();
+				mongodb.dropDatabase();
+	}
+	
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		
 		Colocation colocation = new Colocation();
+		
+//		Delete all database which contain ":" in their name
 		List<String> dbNames = mongoClient.getDatabaseNames();
 		for(int i = 0;i < dbNames.size();i++){
 			String dbName = dbNames.get(i);
@@ -857,7 +932,7 @@ public class Colocation {
 				mongoClient.dropDatabase(dbName);
 			}			
 		}
-		// Total count of all size-1 colocations
+// 		Total count of all size-1 colocations
 		L1();
 		
 		HashMap<String, HashMap<String, Float>> Lk;
@@ -882,97 +957,7 @@ public class Colocation {
 				break;
 			}
 		}
-		
-		
-//		 Delete all database which contain ":" in their name
-//		List<String> dbNames1 = mongoClient.getDatabaseNames();
-//		for(int i = 0;i < dbNames1.size();i++){
-//			String dbName = dbNames1.get(i);
-//			if(dbName.contains(":")==true){
-//				System.out.println("Database dropped = "+dbName);
-//				mongoClient.dropDatabase(dbName);
-//			}			
-//		}
-//		
-		
-		// Code Snippet for MongoDB
-		/*
-		MongoCollection<Document> coll = mongodb.getCollection("A:B:C");
-		
-		for(int i=0;i<5;i++){
-			for(int j = 0;j<5;j++){
-//				BasicDBObject query = new BasicDBObject(i+":"+j, new BasicDBObject("$exists",true));
-				BasicDBObject searchQuery = new BasicDBObject().append("key", i+":"+j);
-				
-//				Document result = coll.find(query).first();
-//				System.out.println(result+"            "+result.get("_id"));
-//				Document documents = (Document) result.get(i+":"+j);
-//				System.out.println(documents);
-
-				for(int k = 0;k<10;k++){
-					if(coll.find(searchQuery).first()!=null){
-						Document result = coll.find(searchQuery).first();
-//						Document documents = (Document) result.get("value");
-						List<Long> documents = (List<Long>) result.get("value");
-						documents.add((long) k);
-						coll.replaceOne(searchQuery, result);
 						
-//						if(documents.containsKey(""+k)==false){
-//							documents.put(""+k, 1);
-//							coll.replaceOne(searchQuery, result);
-//						}
-					}else{
-						System.out.println(i+":"+j);
-						List<Long> tempList = new ArrayList<Long>();
-						tempList.add((long) k);
-						coll.insertOne(new Document("value", tempList).append("key", i+":"+j));
-//						coll.replaceOne(query, result);
-					}					
-				}
-//				System.out.println(documents);
-//				System.out.println(result);
-			}
-		}
-		System.out.println("Total Count = "+coll.count());
-
-		MongoCursor<Document> cursor = coll.find().iterator();
-		try {
-		    while (cursor.hasNext()) {
-		        System.out.println(cursor.next());
-		    }
-		} finally {
-		    cursor.close();
-		}
-		
-		coll.dropCollection();
-		mongodb.dropDatabase();
-		*/		
-		
-		// Code to verify that areConnected() method is correctly
-		/*
-		MongoCollection<Document> coll = mongodb.getCollection("Id_latlong");
-
-		List<Long> idsList = new ArrayList<Long>();
-		for(Iterator<Vertex> it = graph.getVertices().iterator(); it.hasNext();){
-			Vertex vertex = it.next();
-			idsList.add((long)vertex.getId());
-			Document doc = new Document("id",vertex.getId()).append("lat", ((Geoshape)vertex.getProperty("place")).getPoint().getLatitude()).append("long", ((Geoshape)vertex.getProperty("place")).getPoint().getLongitude());
-			coll.insertOne(doc);
-		}
-		
-		int counter = 0;
-		System.out.println("Total vertices = "+idsList.size());
-//		
-//		for(int i = 0;i<idsList.size()-1;i++){
-//			for(int j = i+1;j<idsList.size();j++){
-//				if(areConnected(idsList.get(i), idsList.get(j))==true){
-//					counter++;
-//				}
-//			}
-//		}
-		System.out.println("Total lookups are = "+counter);
-		*/
-		
 		db.close(graph);
 		
 	}
