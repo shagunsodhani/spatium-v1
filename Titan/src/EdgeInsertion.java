@@ -18,9 +18,9 @@ public class EdgeInsertion extends Thread{
 	public Vertex vertex;
 	public double distance;
 	
-	public EdgeInsertion(TitanTransaction graph, Vertex vertex, double distance) {
+	public EdgeInsertion(TitanTransaction graph, long id, double distance) {
 		this.graph = graph;
-		this.vertex = vertex;
+		this.vertex = graph.getVertex(id);
 		this.distance = distance;
 	}
 	
