@@ -1,14 +1,13 @@
 <?php
-    // require_once("db.php");
+    
     // $type = "ARSON";
-    // $param = "stream";
+    // $param = "HOME";
     // if(isset($_GET['type']))
     //     $type = $_GET['type'];
     // if(isset($_GET['param']))
     //     $param = $_GET['param'];
     include 'header.php';
 ?>
-    
     <body>
         <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
             <div class="container-fluid">
@@ -36,31 +35,23 @@
                     ?>
                 </div>
                 <div class="col-sm-9 col-sm-offset-2 col-md-9 col-md-offset-2 main">
-                        <?php
-                        echo $type;
-                        ?>
                     <div id = "container" style="max-width: 800px; height: 400px; margin: 0 auto">
                     </div>
                 </div>
-                <div class="col-sm-3 col-md-2 col-sm-offset-10 sidebar">
-                    <?php 
-                    include 'types.php';
-                    ?>
-                </div>
             </div>
         </div>
-
         <script src="bootstrap/js/jquery-1.11.2.min.js"></script>
         <script src="bootstrap/js/bootstrap.min.js"></script>
+        <script src="bootstrap/js/dygraph-combined.js"></script>
         <script src="bootstrap/js/highcharts.js"></script>
         <script src="bootstrap/js/highcharts_modules.js"></script>
         <script src="bootstrap/js/data_summary.js"></script>
         <script type="text/javascript"> 
             $(document).ready(function () 
                 {
-                    // console.log()
-                    type_occurence_stream();
+                    all_types_occurence();
                 });
         </script>
-    <!-- </body>
+
+    </body>
 </html>

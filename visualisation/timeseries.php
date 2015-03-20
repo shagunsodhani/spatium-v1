@@ -1,9 +1,11 @@
 <?php
     
-    require_once("db.php");
-    $type = "ARSON";
-    if(isset($_GET['type']))
-        $type = $_GET['type'];
+    // $type = "ARSON";
+    // $param = "HOME";
+    // if(isset($_GET['type']))
+    //     $type = $_GET['type'];
+    // if(isset($_GET['param']))
+    //     $param = $_GET['param'];
     include 'header.php';
 ?>
     <body>
@@ -27,12 +29,19 @@
 
         <div class="container-fluid">
             <div class="row">
-                <?php 
-                include 'sidebar.php';
-                ?>
-                <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-                    <div class="container" style="max-width: 800px; height: 400px; margin: 0 auto">
+                <div class="col-sm-3 col-md-2 sidebar">
+                    <?php 
+                        include 'sidebar.php';
+                    ?>
+                </div>
+                <div class="col-sm-9 col-sm-offset-2 col-md-9 col-md-offset-2 main">
+                    <div id = "container" style="max-width: 800px; height: 400px; margin: 0 auto">
                     </div>
+                </div>
+                <div class="col-sm-3 col-md-2 col-sm-offset-10 sidebar">
+                    <?php 
+                    include 'types.php';
+                    ?>
                 </div>
             </div>
         </div>

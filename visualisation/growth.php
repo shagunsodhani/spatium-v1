@@ -1,9 +1,11 @@
 <?php
     
-    require_once("db.php");
-    $type = "ARSON";
-    if(isset($_GET['type']))
-        $type = $_GET['type'];
+    // $type = "ARSON";
+    // $param = "HOME";
+    // if(isset($_GET['type']))
+    //     $type = $_GET['type'];
+    // if(isset($_GET['param']))
+    //     $param = $_GET['param'];
     include 'header.php';
     
 ?>

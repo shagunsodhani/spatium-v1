@@ -1,12 +1,6 @@
 <?php
-    // require_once("db.php");
-    // $type = "ARSON";
-    // $param = "stream";
-    // if(isset($_GET['type']))
-    //     $type = $_GET['type'];
-    // if(isset($_GET['param']))
-    //     $param = $_GET['param'];
     include 'header.php';
+
 ?>
     
     <body>
@@ -18,7 +12,7 @@
                 </div>
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul class="nav navbar-nav">
-                        <li class="active"><a href="#">Data Summary<span class="sr-only">(current)</span></a></li>
+                        <li><a href="#">Data Summary<span class="sr-only">(current)</span></a></li>
                         <li><a href="#">Link</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
@@ -32,13 +26,10 @@
             <div class="row">
                 <div class="col-sm-3 col-md-2 sidebar">
                     <?php 
-                        include 'sidebar.php';
+                    include 'sidebar.php';
                     ?>
                 </div>
                 <div class="col-sm-9 col-sm-offset-2 col-md-9 col-md-offset-2 main">
-                        <?php
-                        echo $type;
-                        ?>
                     <div id = "container" style="max-width: 800px; height: 400px; margin: 0 auto">
                     </div>
                 </div>
@@ -49,7 +40,6 @@
                 </div>
             </div>
         </div>
-
         <script src="bootstrap/js/jquery-1.11.2.min.js"></script>
         <script src="bootstrap/js/bootstrap.min.js"></script>
         <script src="bootstrap/js/highcharts.js"></script>
@@ -58,9 +48,9 @@
         <script type="text/javascript"> 
             $(document).ready(function () 
                 {
-                    // console.log()
                     type_occurence_stream();
                 });
         </script>
+
     <!-- </body>
 </html>

@@ -7,7 +7,7 @@
     $conn = null;
     while($row = $result->fetch(PDO::FETCH_ASSOC)) 
     {
-        echo "<li><a href=\"index.php?type=".$row['primary_type']."\">".$row['primary_type']."</a></li>\n";
+        echo "<li><a href=\"index.php?type=".$row['primary_type']."&param=".$param."\">".$row['primary_type']."</a></li>\n";
     }
 ?>
 </ul>
