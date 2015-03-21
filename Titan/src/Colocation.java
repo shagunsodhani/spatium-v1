@@ -38,7 +38,7 @@ public class Colocation {
 		this.db = new Database();
 		this.graph = this.db.connect();
 		this.total_count = new HashMap<String, Long>();
-		this.PI_threshold = 0.5;
+		this.PI_threshold = 0.2;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 		mongoDB mongoInstance = new mongoDB();
@@ -202,13 +202,15 @@ public class Colocation {
 		return Ckplus1;
 	}	
 	
-	public static void L1(){
+	public static HashSet<List<String>> L1(){
 		/*
 		 * Generate colocations of size 1
 		 * Iterate over all vertices of the graph
 		 */
 		System.out.println("Generating colocations of size 1.\n");
-		
+		HashSet<List<String>> Ckplus1 = new HashSet<List<String>>();
+		List<String> items = new ArrayList<String>();
+				
 		long time1 = System.currentTimeMillis();
 		if(verbose){
 			System.out.println("Generating colocations of size 1.\n");
@@ -225,6 +227,7 @@ public class Colocation {
 				}
 				else {
 					total_count.put(type, (long) 1);
+					items.add(type);
 					
 				}
 				if(verbose){
@@ -232,12 +235,27 @@ public class Colocation {
 				}
 				counter++;
 			}
-		if(verbose){
-			System.out.println("Total number of colocations of size 1 = "+counter+"\n");
+		if(true){
+			System.out.println("Total number of colocations of size 1 = "+total_count.size());
 		}
 
 		long time2 = System.currentTimeMillis();
 		System.out.println("Time taken for size 1 : "+(time2-time1));
+		for(int i = 0; i<items.size()-1;i++){
+			for(int j = i+1; j<items.size();j++){
+				List<String> temp_List = new ArrayList<String>();
+				if (Integer.parseInt(items.get(i)) < Integer.parseInt(items.get(j))) {
+					temp_List.add(items.get(i));
+					temp_List.add(items.get(j));					
+				}else{
+					temp_List.add(items.get(j));
+					temp_List.add(items.get(i));
+				}
+				Ckplus1.add(temp_List);
+			}
+		}
+		
+		return Ckplus1;
 	}
 	
 	public static HashMap<String, HashMap<String, Float>> L2(){
@@ -261,7 +279,6 @@ public class Colocation {
 		}
 		int counter = 0;
 		//could lead to buffer-overflow
-		int counter1 = 0, counter2 = 0, counter3 = 0;
 		for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
 			Edge edge = iterator.next();
 			if (verbose){
@@ -311,7 +328,7 @@ public class Colocation {
 				Double a = x1/total_count.get(type1);
 				Double b = x2/total_count.get(type2);
 				float PI = (float) java.lang.Math.min(a, b);
-//				verbose = true;
+
 				if (verbose)
 				{
 					System.out.println(type1);
@@ -321,19 +338,8 @@ public class Colocation {
 					System.out.println(PI);
 					System.out.println("\n\n");
 				}
-//				verbose = false;
 				if(PI >= PI_threshold)
 				{
-					if(type1.equals("3") & type2.equals("7")){
-						System.out.println("3:7"+counter1);
-					}
-					if(type1.equals("3") & type2.equals("18")){
-						System.out.println("3:18"+counter3);
-					}
-					if(type1.equals("7") & type2.equals("18")){
-						System.out.println("7:18"+counter2);
-					}
-					
 					if(verbose){
 						System.out.println(type1+":"+type2);
 						System.out.println(PI);
@@ -362,6 +368,46 @@ public class Colocation {
 		
 	}
 	
+	public static HashMap<String, HashMap<String, Float>> multithreaded_L2(HashSet<List<String>> Ck, int k, boolean create_db){
+		
+		long time1 = System.currentTimeMillis();
+		HashMap<String, HashMap<String, Float>> L2 = new HashMap<String, HashMap<String,Float>>();
+		System.out.println("Generating Colocations of Size "+k);
+		Iterator it = Ck.iterator();
+		ExecutorService executorService = Executors.newFixedThreadPool(48);
+		
+		while(it.hasNext()){
+			ValidateCandidate validateCandidate = new ValidateCandidate((List<String>) it.next(), k, create_db);
+			executorService.execute(validateCandidate);
+		}
+		executorService.shutdown();
+//		executorService.awaitTermination(120, TimeUnit.SECONDS);
+		while(!executorService.isTerminated()){
+			;
+		}
+		System.out.println("All the threads terminated successfully");
+		it = colocations.entrySet().iterator();
+		
+		while(it.hasNext()){
+			Map.Entry<List<String>, Float> pairs = (Map.Entry<List<String>, Float>) it.next();
+			List<String> tempList = (List<String>) pairs.getKey();
+			String type1 = tempList.get(0);
+			String type2 = tempList.get(1);
+			
+			if(L2.containsKey(type1)==false){
+				HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
+				tempHashMap.put(type2, pairs.getValue());
+				L2.put(type1, tempHashMap);
+			}
+			else{
+				L2.get(type1).put(type2, pairs.getValue());
+			}	
+		}
+		long time2 = System.currentTimeMillis();
+		System.out.println("Time taken for size 2 : "+(time2-time1));
+		return L2;
+	}
+
 	public static HashMap<String, HashMap<String,Float>> L3(HashSet<List<String>> Ck, int k, boolean create_db){
 		/*
 		 * Generate colocation of size 3
@@ -563,7 +609,7 @@ public class Colocation {
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
 		
-		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		ExecutorService executorService = Executors.newFixedThreadPool(48);
 		
 		while(it.hasNext()){
 			ValidateCandidate validateCandidate = new ValidateCandidate((List<String>) it.next(), k, create_db);
@@ -933,15 +979,18 @@ public class Colocation {
 			}			
 		}
 // 		Total count of all size-1 colocations
-		L1();
+		
 		
 		HashMap<String, HashMap<String, Float>> Lk;
 		HashSet<List<String>> Ck = new HashSet<List<String>>();
+		Ck = L1();
+//		print_Candidate(Ck, 2);
 		
 		for(int k = 2;;k++){
 			System.out.println("Current K is "+k);
 			if(k==2){
-				Lk = L2();				
+//				Lk = L2();
+				Lk = multithreaded_L2(Ck, 2, true);
 			}else if (k==3) {
 				Lk = multithreaded_L3(Ck, k, true);
 //				L3(Ck, k, false);
