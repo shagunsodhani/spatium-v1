@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -86,9 +87,8 @@ public class Graph {
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKeyTSI).buildCompositeIndex();
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
 		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).addKey(timeKey).addKey(instanceid).buildMixedIndex("search");
-
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
-//		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
+		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
 //		mgmt.buildIndex("distance", Vertex.class).addKey(distanceKey).buildMixedIndex("search");
 		mgmt.buildIndex("visible", Vertex.class).addKey(visibleKey).buildCompositeIndex();
 		mgmt.commit();
@@ -98,7 +98,7 @@ public class Graph {
 	}
 	
 	@SuppressWarnings("unused")
-	public static void InitializeGraph(TransactionalGraph graph, int limit) throws Exception
+	public static void InitializeGraph(TitanGraph graph, int limit) throws Exception
 	{
 		System.out.println("InitializeGraph method called.\n");
 		int START = 0;
@@ -126,6 +126,7 @@ public class Graph {
 	 		  long time_3 = System.currentTimeMillis();
 	 		  long time_4;
 	 		  int tym;
+	 		  TitanTransaction graph1 = graph.newTransaction();
 	 		  
 		      while(rs.next()){
 
@@ -139,7 +140,7 @@ public class Graph {
 		        	 continue;
 		         Geoshape place = Geoshape.point(latitude, longitude);
 	 		     Geoshape approxplace = Geoshape.point((double)Math.round(latitude*100)/100, (double)Math.round(longitude*100)/100);  
-	 		     Vertex node = graph.addVertex(id);
+	 		     Vertex node = graph1.addVertex(id);
 	 		     // Note here that new type i.e, encoded type is added instead of original type
 	 		     node.setProperty("type", enCoding.get(type));
 	 		     node.setProperty("place", place);
@@ -155,9 +156,11 @@ public class Graph {
 	 		    	 time_4 = System.currentTimeMillis();
 	 		    	 System.out.println("Total vertices added till now = "+count+" in "+(time_4-time_3)+" ms.");
 	 		    	 time_3 = time_4;
-	 		    	 graph.commit();
+	 		    	 graph1.commit();
+	 		    	 graph1 = graph.newTransaction();
 	 		     }
-		      }                                             
+		      }                                   
+		     graph1.commit();
 		    long time_2 = System.currentTimeMillis();
 	 		time += time_2-time_1; 
 	 		System.out.println("Total vertices added till now = "+count+" in "+(time_2-time_1)+" ms.");
@@ -315,20 +318,37 @@ public class Graph {
 		return (time_2-time_1);
 	}
 	
-	public static void addEdgesMultiThread(TitanTransaction graph, double distance) throws InterruptedException{
+	public static void addEdgesMultiThread(TitanGraph graph, double distance) throws InterruptedException{
 		
 		double time1 = System.currentTimeMillis();	
 		Iterator<Vertex> iterator = graph.getVertices().iterator();
-		ExecutorService executorService = Executors.newFixedThreadPool(100);
-		int i;
+		List<Long> ids = new ArrayList<Long>();
+		while(iterator.hasNext()){
+			Vertex vertex = (Vertex) iterator.next();
+			ids.add((Long) vertex.getId());
+		}
 		
-		for(i = 1;iterator.hasNext();i++){
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		int i = 0;
+		TitanTransaction graph1 = graph.newTransaction();
+		for(;i < ids.size();i++){
 			
-			Vertex vertex = iterator.next();
+//			Vertex vertex = iterator.next();
 //			TitanTransaction graph2 = graph.newTransaction();
-			EdgeInsertion edgeInsertion = new EdgeInsertion(graph,vertex,distance);
+			EdgeInsertion edgeInsertion = new EdgeInsertion(graph1,ids.get(i),distance);
 			System.out.println(i);
 			executorService.execute(edgeInsertion);
+			
+			if((i+1)%5001 == 0){
+				executorService.shutdown();
+				while(!executorService.isTerminated()){
+					;
+				}
+				System.out.println("All the threads terminated successfully");
+				graph1.commit();
+				executorService = Executors.newFixedThreadPool(100);
+				graph1 = graph.newTransaction();
+			}
 		
 		}
 		executorService.shutdown();
@@ -337,7 +357,7 @@ public class Graph {
 			;
 		}
 		System.out.println("All the threads terminated successfully");
-		
+		graph1.commit();
 		/*
 		Iterator it = edgesMap.entrySet().iterator();
 		int count = 0;
@@ -378,7 +398,7 @@ public class Graph {
 		System.out.println("Total Vertices = "+counter+"\n");
 	}
 
-	public static void iterateEdges(TransactionalGraph graph) {
+	public static void iterateEdges(TitanGraph graph) {
 		/*
 		 * Iterates over all edges of a graph and displays total no. of edges
 		 */
@@ -388,22 +408,19 @@ public class Graph {
 		int temp_count = 0;
 		for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
 			Edge edge = iterator.next();
-			Vertex v1 = edge.getVertex(Direction.IN);
-			Vertex v2 = edge.getVertex(Direction.OUT);
-//			System.out.println(counter+" : "+" Edge Label = "+edge.getLabel()+" Distance = "+edge.getProperty("distance"));
-//			System.out.println(v1.getProperty("instanceid")+" "+v2.getProperty("instanceid"));
-//			System.out.println(v1.getProperty("type")+":"+v2.getProperty("type"));
-			
-			if(Integer.parseInt((String)v1.getProperty("type")) < Integer.parseInt((String)v2.getProperty("type"))){
-				temp_count ++;
-			}
-			
-			if(count_edges_distribution.get(edge.getLabel()) == null){
-				count_edges_distribution.put(edge.getLabel(), 1);
-			}else{
-				int temp = count_edges_distribution.get(edge.getLabel());
-				count_edges_distribution.put(edge.getLabel(), ++temp);
-			}
+//			Vertex v1 = edge.getVertex(Direction.IN);
+//			Vertex v2 = edge.getVertex(Direction.OUT);
+//			
+//			if(Integer.parseInt((String)v1.getProperty("type")) < Integer.parseInt((String)v2.getProperty("type"))){
+//				temp_count ++;
+//			}
+//			
+//			if(count_edges_distribution.get(edge.getLabel()) == null){
+//				count_edges_distribution.put(edge.getLabel(), 1);
+//			}else{
+//				int temp = count_edges_distribution.get(edge.getLabel());
+//				count_edges_distribution.put(edge.getLabel(), ++temp);
+//			}
 			counter++;
 		}
 		System.out.println("Total no. of edges are = "+counter+ " and temp_count "+temp_count);
@@ -730,29 +747,27 @@ public class Graph {
 		
 		System.out.println(dateFormat.format(date));
 //		boolean clean = false, initialize = false, addEdges = true;
-		boolean clean = true, initialize = true, addEdges = false;
-		int no_of_instances = 1000;
+//		boolean clean = true, initialize = true, addEdges = false;
+//		boolean clean = false, initialize = false, addEdges = false;
+		boolean clean = true, initialize = true, addEdges = true;
+		
+		int no_of_instances = 10000;
 		double distance_threshold = 0.3;
 		
 		if(clean){
 			// Step 1 : Clear initial graph
 			graph = clearGraph(db, graph);
-				
 			// Step 2 : Build Schema
 			build_schema(graph);
 		}
 		if(initialize){
 			// Step 3 : Initialize Graph Database
-			TitanTransaction graph1 = graph.newTransaction();
-			InitializeGraph(graph1,1000);
+			InitializeGraph(graph,no_of_instances);
 			System.out.println("Graph initialized");
-			graph1.commit();
 		}
 		if(addEdges){
 			// Step 4 : Build edges for some distance threshold
-			TitanTransaction graph1 = graph.newTransaction();
-			addEdgesMultiThread(graph1, distance_threshold);
-			graph1.commit();
+			addEdgesMultiThread(graph, distance_threshold);
 		}
 
 		// Step 4 : Generate stats
@@ -761,7 +776,6 @@ public class Graph {
 		
 //		addEdges(graph, 0.3);
 		iterateEdges(graph);
-//		iterateEdges(graph1);
 		
 		date = new Date();
 		System.out.println(dateFormat.format(date));
