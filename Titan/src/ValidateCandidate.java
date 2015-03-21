@@ -3,16 +3,20 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+
 import org.bson.Document;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.Mongo;
 import com.mongodb.MongoCursorNotFoundException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.sun.org.apache.bcel.internal.generic.L2D;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 public class ValidateCandidate extends Thread{
@@ -41,8 +45,49 @@ public class ValidateCandidate extends Thread{
 		if(k>3){
 			Lk();
 		}
-		else {
+		else if(k==3){
 			L3();
+		}else{
+			L2();
+		}
+	}
+	
+	public void L2(){
+		HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
+		for(int i=0;i<tempList.size();i++){
+			String key = tempList.get(i);
+			if(unique.containsKey(key)==false){
+				HashSet<Long> tempHashSet = new HashSet<Long>();
+				unique.put(key, tempHashSet);
+			}
+		}
+		String type1 = tempList.get(0);
+		String type2 = tempList.get(1);
+		
+		for (Iterator<Edge> iterator = graph.getEdges("label", type1+"-"+type2).iterator(); iterator.hasNext();) {
+			Edge edge = iterator.next();
+			if (verbose){
+//				System.out.println(counter+" : "+" Edge Label = "+edge.getLabel()+" Distance = "+edge.getProperty("distance"));
+			}
+			Vertex vertex1 = edge.getVertex(Direction.IN);
+//			String type1 = vertex1.getProperty("type");
+			Long Id1 = (Long) vertex1.getId();
+			Vertex vertex2 = edge.getVertex(Direction.OUT);
+//			String type2 = vertex2.getProperty("type");
+			Long Id2 = (Long) vertex2.getId();
+			//could lead to buffer-overflow	
+						
+			unique.get(type1).add(Id1);
+			unique.get(type2).add(Id2);
+		}
+		
+		Double x1 = (double) unique.get(type1).size();
+		Double x2 = (double) unique.get(type2).size();
+		Double a = x1/total_count.get(type1);
+		Double b = x2/total_count.get(type2);
+		float PI = (float) java.lang.Math.min(a, b);
+		if(PI >= PI_threshold){
+			Colocation.colocations.put(tempList, PI);
 		}
 	}
 	
@@ -140,6 +185,7 @@ public class ValidateCandidate extends Thread{
 				System.out.println("Total_Count = "+count_type1+":"+count_type2+":"+count_type3);
 				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
 			}
+			coll.createIndex(new BasicDBObject("key",1));
 			Colocation.colocations.put(tempList, pi);
 		}
 		else{
@@ -203,8 +249,10 @@ public class ValidateCandidate extends Thread{
 			coll_1 = mongodb.getCollection(dbname2);
 			coll_2 = mongodb.getCollection(dbname3);
 		}
+		MongoCursor<Document> cursor_1 = (coll_1.find()).noCursorTimeout(true).iterator();
 		try {
-			MongoCursor<Document> cursor_1 = coll_1.find().iterator();
+			
+//			cursor_1.setOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
 			while (cursor_1.hasNext()) {
 					Document doc_1 = cursor_1.next();
 					String id1ist = doc_1.getString("key");
@@ -213,8 +261,8 @@ public class ValidateCandidate extends Thread{
 					if(coll_2.find(searchQuery).first()!=null){
 						
 						Document doc_2 = coll_2.find(searchQuery).first();
-						List<Long> doc_1_value =  (List<Long>) doc_1.get("value");
-						List<Long> doc_2_value =  (List<Long>) doc_2.get("value");
+						List<Long> doc_1_value =  (ArrayList<Long>) doc_1.get("value");
+						List<Long> doc_2_value =  (ArrayList<Long>) doc_2.get("value");
 						boolean flag_outer = false;
 						for (i = 0; i < doc_1_value.size(); i++) {
 							boolean flag_inner = false;
@@ -241,9 +289,10 @@ public class ValidateCandidate extends Thread{
 			}
 		} catch (MongoCursorNotFoundException exception) {
 			// TODO: handle exception
-			System.out.println("Cursor Not Found Exception "+dbname2+" and other colocations are "+dbname1+" and "+dbname2);
+			System.out.println("Cursor Not Found Exception "+dbname2+" and other colocations are "+dbname1+" and "+dbname3);
 		}
 		finally{
+			cursor_1.close();
 			float ParticipationIndex = (float)1.0;
 			for (int x = 0; x < tempList.size(); x++) {
 				float ParticipationRatio = unique.get(tempList.get(x)).size()/((float)total_count.get(tempList.get(x))); 
@@ -261,6 +310,7 @@ public class ValidateCandidate extends Thread{
 				}
 			}
 			else{
+				coll.createIndex(new BasicDBObject("key",1));
 				Colocation.colocations.put(tempList, ParticipationIndex);
 			}		
 		}		
