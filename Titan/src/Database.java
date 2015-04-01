@@ -88,7 +88,6 @@ public class Database {
 		config.addProperty("index.geohash_precision", prop.getProperty("storage.index.geohash_precision"));
 		config.addProperty("index.geohash_prefix", prop.getProperty("storage.index.geohash_prefix"));
 		
-
 		TitanGraph g = TitanFactory.open(config);
 //		System.out.println("Instantiated Titan Graph Instance");
 		return g;
