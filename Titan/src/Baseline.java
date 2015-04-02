@@ -23,6 +23,7 @@ import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.groovy.Gremlin;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
 import com.tinkerpop.pipes.PipeFunction;
 
@@ -39,7 +40,7 @@ public class Baseline {
 		this.db = new Database();
 		this.graph = this.db.connect();
 		this.total_count = new HashMap<String, Long>();
-		this.PI_threshold = 0.1;
+		this.PI_threshold = 0.5;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 	}
@@ -52,7 +53,62 @@ public class Baseline {
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 	}
+	
+	public static boolean areConnected(long id1, long id2) 
+	{	
+		Vertex vertex = graph.getVertex(id1);
+		String type = vertex.getProperty("type");
+		Vertex vertex2 = graph.getVertex(id2);
+		String type2 = vertex2.getProperty("type");
+		if(Integer.parseInt(type) < Integer.parseInt(type2)){
+			for(Iterator<Vertex> it = vertex.getVertices(Direction.IN,type+"-"+type2).iterator();
+					it.hasNext();){
+				Vertex vertex3 = it.next();
+				if(id2 == ((long)vertex3.getId())){					
+					return true;
+				}
+			}
+		}
+		if(Integer.parseInt(type) > Integer.parseInt(type2))
+		{			
+			for(Iterator<Vertex> it = vertex2.getVertices(Direction.IN,type2+"-"+type).iterator();
+					it.hasNext();){
+				Vertex vertex3 = it.next();
+				if(id1 == ((long)vertex3.getId())){					
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
+	public static boolean areConnected(long id1, final long id2, String label) {
+		
+		GremlinPipeline pipe = new GremlinPipeline();
+		pipe.start(graph.getVertex(id1)).in(label).filter(new PipeFunction<Vertex, Boolean>() {
+			public Boolean compute(Vertex argument){
+				if((Long)argument.getId() == id2){
+					return true;
+				}
+				else{
+					return false;
+				}
+			}
+		}).path(new PipeFunction<Vertex, Long>(){
+			public Long compute(Vertex argument) {
+				return (Long) argument.getId();
+			}
+		}).enablePath();
+				
+		if(pipe.hasNext()){
+//			System.out.println(pipe);
+			return true;
+		}else{
+			return false;
+		}
+		
+	}
+	
 	public static HashSet<List<String>> L1(){
 		/*
 		 * Generate colocations of size 1
@@ -278,11 +334,14 @@ public class Baseline {
 //			System.out.println("Candidate being screwed right now is : "+candidate);
 			
 			GremlinPipeline pipe = new GremlinPipeline();
+			
 			pipe.start(graph.getVertices("type",type1)).in(type1+"-"+type2).path(new PipeFunction<Vertex, Long>(){
 				public Long compute(Vertex argument) {
 					return (Long) argument.getId();
 				}
 			}).enablePath();
+			
+			
 			
 			if(global_count.containsKey(type1+":"+type2)==false){
 				HashMap<Long, Boolean> default_hashmap = new HashMap<Long, Boolean>();
@@ -347,9 +406,7 @@ public class Baseline {
 			
 			
 		}		
-		
-		
-		
+				
 		if (verbose){
 			System.out.println("Total no. of colocations of size 2  are = "+counter);
 		}
@@ -359,6 +416,46 @@ public class Baseline {
 		
 	}
 		
+	public static HashMap<String, HashMap<String, Float>> multithreaded_L2(HashSet<List<String>> Ck, int k){
+		
+		long time1 = System.currentTimeMillis();
+		HashMap<String, HashMap<String, Float>> L2 = new HashMap<String, HashMap<String,Float>>();
+		System.out.println("Generating Colocations of Size "+k);
+		Iterator it = Ck.iterator();
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		
+		while(it.hasNext()){
+			ValidateTraversal validateTraversal = new ValidateTraversal((List<String>) it.next(), k);
+			executorService.execute(validateTraversal);
+		}
+		executorService.shutdown();
+		while(!executorService.isTerminated()){
+			;
+		}
+		System.out.println("All the threads terminated successfully");
+		it = colocations.entrySet().iterator();
+		
+		while(it.hasNext()){
+			Map.Entry<List<String>, Float> pairs = (Map.Entry<List<String>, Float>) it.next();
+			List<String> tempList = (List<String>) pairs.getKey();
+			String type1 = tempList.get(0);
+			String type2 = tempList.get(1);
+			
+			if(L2.containsKey(type1)==false){
+				HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
+				tempHashMap.put(type2, pairs.getValue());
+				L2.put(type1, tempHashMap);
+			}
+			else{
+				L2.get(type1).put(type2, pairs.getValue());
+			}	
+		}
+		long time2 = System.currentTimeMillis();
+		System.out.println("Time taken for size 2 : "+(time2-time1));
+		colocations.clear();
+		return L2;
+	}
+	
 	public static HashMap<String, HashMap<String, Float>> L3(HashSet<List<String>> Ck){
 		/*
 		 * Generate colocations of size 2
@@ -500,6 +597,202 @@ public class Baseline {
 		return L_3;
 			
 	}	
+
+	public static HashMap<String, HashMap<String, Float>> multithreaded_Lk(HashSet<List<String>> Ck, int k){
+		/*
+		 * Generate colocation of size 3
+		 */
+		long time1 = System.currentTimeMillis();
+		
+		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
+		System.out.println("Generating Colocations of Size "+k);
+		Iterator it = Ck.iterator();
+		
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		
+		while(it.hasNext()){
+			ValidateTraversal validateTraversal = new ValidateTraversal((List<String>) it.next(), k);
+			executorService.execute(validateTraversal);
+		}
+		executorService.shutdown();
+		while(!executorService.isTerminated()){
+			;
+		}
+		System.out.println("All the threads terminated successfully");
+		
+		it = colocations.entrySet().iterator();
+						
+		while(it.hasNext()){
+			Map.Entry<List<String>, Float> pairs = (Map.Entry<List<String>, Float>) it.next();
+			List<String> tempList = (List<String>) pairs.getKey();
+			String type1 = "";
+			int i, j;
+			for(i = 0; i < k-2; i++){
+				type1 += tempList.get(i)+":";
+			}
+			type1 = type1.substring(0, type1.length()-1);
+			String type2 = tempList.get(k-2);
+			String type3 = tempList.get(k-1);
+			
+			if(Lk.containsKey(type1+":"+type2)==false){
+				HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
+				tempHashMap.put(type3, pairs.getValue());
+				Lk.put(type1+":"+type2, tempHashMap);
+			}else{
+				Lk.get(type1+":"+type2).put(type3, pairs.getValue());
+			}			
+		}
+		colocations.clear();
+		long time2 = System.currentTimeMillis();
+		System.out.println("Total time for verifying itemsets of size "+k+" = "+(time2-time1));
+		return Lk;
+	}
+	
+	public static HashMap<String, HashMap<String, Float>> Lk(HashSet<List<String>> Ck){
+		/*
+		 * Generate colocations of size 2
+		 * Iterate over all edges of the graph
+		 */
+		
+		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
+		
+		long time1 = System.currentTimeMillis();
+		
+		if(verbose){
+			System.out.println("Generating colocations of size 3.\n");
+		}
+		int counter = 0;
+		//could lead to buffer-overflow
+		int k=0;
+//		GremlinPipeline pipe = new GremlinPipeline();
+		
+		Iterator it;
+		it = Ck.iterator();
+//		String type = [];
+		
+//		String candidate, type1, type2, type3;
+		while(it.hasNext())
+		{
+			ArrayList<String> type = new ArrayList<String>();
+			HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
+			List<String> tempList = ((List<String>)it.next());
+			k = tempList.size();
+			for(int i=0;i<k;i++)
+			{
+				String key = tempList.get(i);
+				if(unique.containsKey(key)==false)
+				{
+					HashSet<Long> tempHashSet = new HashSet<Long>();
+					unique.put(key, tempHashSet);
+				}
+				type.add(key);
+			}
+//			candidate = type1+":"+type2+":"+type3;
+			
+//			System.out.println("Candidate being screwed right now is : "+candidate);
+			
+			final List<Vertex> temp = new ArrayList<Vertex>();
+			GremlinPipeline pipe = new GremlinPipeline();
+			
+			
+			if (k==4)
+			{
+				pipe.start(graph.getVertices("type",type.get(0))).sideEffect(new PipeFunction<Vertex, Vertex>(){
+					public Vertex compute(Vertex argument){
+						if(temp.size()>0){
+							temp.remove(temp.size()-1);
+						}
+						temp.add(argument);
+						return argument;
+					}
+					}).in(type.get(0)+"-"+type.get(1)).in(type.get(1)+"-"+type.get(2)).in(type.get(2)+"-"+type.get(3)).out(type.get(0)+"-"+type.get(3)).filter(new PipeFunction<Vertex,Boolean>() {
+					  public Boolean compute(Vertex argument) {
+						  if(temp.contains(argument)){
+							  return true;
+						  }
+						  else{
+							  return false;
+						  }				  
+						  }
+						}).path(new PipeFunction<Vertex, Long>(){
+					public Long compute(Vertex argument) {
+						return (Long) argument.getId();
+					}
+				}).enablePath();
+			}
+//			else if (k==5) {
+//				
+//			}
+				
+			Iterator pit = pipe.iterator();
+			
+			while(pit.hasNext())
+			{
+//				System.out.println(pit.next().get(0).getClass());
+				List<Long> IdList = ((List<Long>)pit.next());
+				Boolean flag = true;
+				outerloop:
+				for (int i = 0; i < k-2; i++) 
+				{
+					for (int j = i+2; j < k; j++) 
+					{
+						if(areConnected(IdList.get(i), IdList.get(j)) == false)
+						{
+							flag = false;
+							break outerloop;
+						}
+					}
+				}
+				if(flag==false)
+					continue;
+				for (int i = 0; i < k; i++) 
+				{
+					unique.get(type.get(i)).add(IdList.get(i));
+				}
+			}
+			
+			float ParticipationIndex = (float)1.0;
+			for (int x = 0; x < k; x++) 
+			{
+				float ParticipationRatio = unique.get(type.get(x)).size()/((float)total_count.get(type.get(x))); 
+				if(ParticipationIndex > ParticipationRatio)
+				{
+					ParticipationIndex = ParticipationRatio;
+				}
+			}
+			if(ParticipationIndex >= PI_threshold)
+			{
+				String type1 = "";
+				int i, j;
+				for(i = 0; i < k-2; i++){
+					type1 += type.get(i)+":";
+				}
+				type1 = type1.substring(0, type1.length()-1);
+				String type2 = type.get(k-2);
+				String type3 = type.get(k-1);
+				//System.out.println(type1+":"+type2+":"+type3+" = "+ParticipationIndex);
+				
+				if(Lk.containsKey(type1+":"+type2)==false)
+				{
+					HashMap<String, Float> tempHashMap = new HashMap<String, Float>();
+					tempHashMap.put(type3, ParticipationIndex);
+					Lk.put(type1+":"+type2, tempHashMap);
+				}else
+				{
+					Lk.get(type1+":"+type2).put(type3, ParticipationIndex);
+				}
+			}
+		}
+		
+		if (verbose)
+		{
+			System.out.println("Total no. of colocations of size 2  are = "+counter);
+		}
+		long time2 = System.currentTimeMillis();
+		System.out.println("Time taken for size "+k+" : "+(time2-time1));
+		return Lk;
+			
+		}	
 	
 	public static void print_Candidate(HashSet<List<String>> Ck, int k){
 		int counter = 0;
@@ -524,19 +817,51 @@ public class Baseline {
 		
 		Baseline baseline = new Baseline();
 		
-//		HashMap<String, HashMap<String, Float>> Lk;
-		HashSet<List<String>> C2 = new HashSet<List<String>>();
-		HashMap<String, HashMap<String, Float>> L_k = new HashMap<String, HashMap<String, Float>>();
+		HashMap<String, HashMap<String, Float>> Lk;
 		HashSet<List<String>> Ck = new HashSet<List<String>>();
+		Ck = L1();
+//		print_Candidate(Ck, 2);
 		
-		C2 = L1();
-		print_Candidate(C2, 2);
-		L_k = L2(C2); 
-		print_Frequent(L_k, 2);
-		Ck = join_and_prune(L_k, 2);
-		print_Candidate(Ck, 3);
-		L_k = L3(Ck);
-		print_Frequent(L_k, 3);
+		for(int k = 2;k<11;k++){
+			System.out.println("Current K is "+k);
+			if(k==2){
+				Lk = multithreaded_L2(Ck, 2);
+//				Lk = L2();				
+			}else if (k==3) {
+				Lk = multithreaded_Lk(Ck, k);
+//				Lk = L3(Ck);
+			}else {
+				Lk = multithreaded_Lk(Ck, k);
+//				Lk = Lk(Ck);
+			}
+			print_Frequent(Lk, k);
+			Ck = join_and_prune(Lk, k);
+			print_Candidate(Ck, k+1);
+			
+			if(Ck.isEmpty()){
+				break;
+			}
+		}
+		
+		
+//		HashSet<List<String>> C2 = new HashSet<List<String>>();
+//		HashMap<String, HashMap<String, Float>> L_k = new HashMap<String, HashMap<String, Float>>();
+//		HashSet<List<String>> Ck = new HashSet<List<String>>();
+//		
+//		C2 = L1();
+////		print_Candidate(C2, 2);
+//		L_k = L2(C2); 
+////		print_Frequent(L_k, 2);
+//		Ck = join_and_prune(L_k, 2);
+////		print_Candidate(Ck, 3);
+//		L_k = L3(Ck);
+//		print_Frequent(L_k, 3);
+//		Ck = join_and_prune(L_k, 3);
+//		print_Candidate(Ck, 4);
+//		L_k = Lk(Ck);
+//		print_Frequent(L_k, 4);
+		
+		
 		db.close(graph);		
 	}
 
