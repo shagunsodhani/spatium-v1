@@ -22,6 +22,8 @@ import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.PipeFunction;
 
 public class Colocation {
 	
@@ -38,13 +40,25 @@ public class Colocation {
 		this.db = new Database();
 		this.graph = this.db.connect();
 		this.total_count = new HashMap<String, Long>();
-		this.PI_threshold = 0.2;
+		this.PI_threshold = 0.5;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 		mongoDB mongoInstance = new mongoDB();
 		this.mongoClient = mongoDB.mongoClient;
 		this.mongodb = mongoInstance.connect(true);
-	}	
+	}
+	
+	public Colocation(Database db, TitanGraph graph){
+		this.db = db;
+		this.graph = graph;
+		this.total_count = new HashMap<String, Long>();
+		this.PI_threshold = 0.001;
+		this.verbose = false;
+		this.colocations = new ConcurrentHashMap<List<String>,Float>();
+		mongoDB mongoInstance = new mongoDB();
+		this.mongoClient = mongoDB.mongoClient;
+		this.mongodb = mongoInstance.connect(true);
+	}
 	
 	public static void print_Frequent(HashMap<String, HashMap<String, Float>> Lk, int k){
 		
@@ -374,7 +388,7 @@ public class Colocation {
 		HashMap<String, HashMap<String, Float>> L2 = new HashMap<String, HashMap<String,Float>>();
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
-		ExecutorService executorService = Executors.newFixedThreadPool(48);
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
 		
 		while(it.hasNext()){
 			ValidateCandidate validateCandidate = new ValidateCandidate((List<String>) it.next(), k, create_db);
@@ -405,6 +419,7 @@ public class Colocation {
 		}
 		long time2 = System.currentTimeMillis();
 		System.out.println("Time taken for size 2 : "+(time2-time1));
+		colocations.clear();
 		return L2;
 	}
 
@@ -609,7 +624,7 @@ public class Colocation {
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
 		
-		ExecutorService executorService = Executors.newFixedThreadPool(48);
+		ExecutorService executorService = Executors.newFixedThreadPool(100);
 		
 		while(it.hasNext()){
 			ValidateCandidate validateCandidate = new ValidateCandidate((List<String>) it.next(), k, create_db);
@@ -893,22 +908,76 @@ public class Colocation {
 		return false;
 	}
 	
-	public void verify_areConnected(){
-		// Code to verify that areConnected() method is correctly
-		MongoCollection<Document> coll = mongodb.getCollection("Id_latlong");
+	public static boolean areConnected(long id1, final long id2, String label) {
+		
+		GremlinPipeline pipe = new GremlinPipeline();
+		pipe.start(graph.getVertex(id1)).in(label).filter(new PipeFunction<Vertex, Boolean>() {
+			public Boolean compute(Vertex argument){
+				if((Long)argument.getId() == id2){
+					return true;
+				}
+				else{
+					return false;
+				}
+			}
+		}).path(new PipeFunction<Vertex, Long>(){
+			public Long compute(Vertex argument) {
+				return (Long) argument.getId();
+			}
+		}).enablePath();
+				
+		if(pipe.hasNext()){
+//			System.out.println(pipe);
+			return true;
+		}else{
+			return false;
+		}
+		
+	}
+	
+	public static void verify_areConnected(){
+		// Code to verify that areConnected() method is correctly working
+//		MongoCollection<Document> coll = mongodb.getCollection("Id_latlong");
+//
+//		List<Long> idsList = new ArrayList<Long>();
+//		for(Iterator<Vertex> it = graph.getVertices().iterator(); it.hasNext();){
+//			Vertex vertex = it.next();
+//			idsList.add((long)vertex.getId());
+//			Document doc = new Document("id",vertex.getId()).append("lat", ((Geoshape)vertex.getProperty("place")).getPoint().getLatitude()).append("long", ((Geoshape)vertex.getProperty("place")).getPoint().getLongitude());
+//			coll.insertOne(doc);
+//		}
+//				
+//		int counter = 0;
+//		System.out.println("Total vertices = "+idsList.size());
+//		System.out.println("Total lookups are = "+counter);
+		
+		long time1 = System.currentTimeMillis();
 
 		List<Long> idsList = new ArrayList<Long>();
-		for(Iterator<Vertex> it = graph.getVertices().iterator(); it.hasNext();){
-			Vertex vertex = it.next();
-			idsList.add((long)vertex.getId());
-			Document doc = new Document("id",vertex.getId()).append("lat", ((Geoshape)vertex.getProperty("place")).getPoint().getLatitude()).append("long", ((Geoshape)vertex.getProperty("place")).getPoint().getLongitude());
-			coll.insertOne(doc);
-		}
-				
-		int counter = 0;
-		System.out.println("Total vertices = "+idsList.size());
-		System.out.println("Total lookups are = "+counter);
-
+		List<String> label = new ArrayList<String>();
+		
+ 		for(Iterator<Vertex> it = graph.getVertices().iterator(); it.hasNext();){
+ 			Vertex vertex = it.next();
+ 			idsList.add((long)vertex.getId());
+ 			label.add((String)vertex.getProperty("type"));
+ 		}
+ 		
+ 		int counter = 0;
+ 		System.out.println("Total vertices = "+idsList.size());
+ 		
+ 		for(int i = 0;i<idsList.size();i++){
+ 			for(int j = 0;j<idsList.size();j++){
+ 				if(i==j)
+ 					continue;
+ 				
+ 				if(areConnected(idsList.get(i), idsList.get(j),label.get(i)+"-"+label.get(j))==true){
+ 					counter++;
+ 				}
+ 			}
+ 		}
+ 		System.out.println("Total lookups are = "+counter);
+ 		long time2 = System.currentTimeMillis();
+		System.out.println("Total time = "+(time2-time1));
 	}
 	
 	public void mongoDB_example(){
@@ -978,13 +1047,12 @@ public class Colocation {
 				mongoClient.dropDatabase(dbName);
 			}			
 		}
-// 		Total count of all size-1 colocations
-		
+//		verify_areConnected();
 		
 		HashMap<String, HashMap<String, Float>> Lk;
 		HashSet<List<String>> Ck = new HashSet<List<String>>();
 		Ck = L1();
-//		print_Candidate(Ck, 2);
+		print_Candidate(Ck, 2);
 		
 		for(int k = 2;;k++){
 			System.out.println("Current K is "+k);
@@ -1005,8 +1073,8 @@ public class Colocation {
 			if(Ck.isEmpty()){
 				break;
 			}
-		}
-						
+		}		
+		
 		db.close(graph);
 		
 	}

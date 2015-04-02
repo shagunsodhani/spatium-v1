@@ -18,6 +18,8 @@ import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.PipeFunction;
 
 public class ValidateCandidate extends Thread{
 	
@@ -51,8 +53,75 @@ public class ValidateCandidate extends Thread{
 			L2();
 		}
 	}
-	
+
 	public void L2(){
+		HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
+		for(int i=0;i<tempList.size();i++){
+			String key = tempList.get(i);
+			if(unique.containsKey(key)==false){
+				HashSet<Long> tempHashSet = new HashSet<Long>();
+				unique.put(key, tempHashSet);
+			}
+		}
+		
+		String type1, type2;
+//		List<String> tempList = ((List<String>)it.next());
+		type1 = tempList.get(0);
+		type2 = tempList.get(1);
+		String candidate = type1+":"+type2;
+		
+//		System.out.println("Candidate being screwed right now is : "+candidate);
+		
+		GremlinPipeline pipe = new GremlinPipeline();
+		
+		pipe.start(graph.getVertices("type",type1)).in(type1+"-"+type2).path(new PipeFunction<Vertex, Long>(){
+			public Long compute(Vertex argument) {
+				return (Long) argument.getId();
+			}
+		}).enablePath();
+				
+		Iterator pit = pipe.iterator();
+		
+		while(pit.hasNext()){
+			
+//			System.out.println(pit.next().get(0).getClass());
+			List<Long> tempList1 = ((List<Long>)pit.next());
+			Long Id1 = tempList1.get(0);
+			Long Id2 = tempList1.get(1);
+			
+			unique.get(type1).add(Id1);
+			unique.get(type2).add(Id2);
+		}
+		
+		Double x1 = (double) unique.get(type1).size();
+		Double x2 = (double) unique.get(type2).size();
+		Double a = x1/total_count.get(type1);
+		Double b = x2/total_count.get(type2);
+		float PI = (float) java.lang.Math.min(a, b);
+
+		if (verbose)
+		{
+			System.out.println(type1);
+			System.out.println(type2);
+			System.out.println(x1+" / "+total_count.get(type1)+" "+type1);
+			System.out.println(x2+" / "+total_count.get(type2)+" "+type2);
+			System.out.println(PI);
+			System.out.println("\n\n");
+		}
+		if(PI >= PI_threshold)
+		{
+			if(verbose){
+				System.out.println(type1+":"+type2);
+				System.out.println(PI);
+				System.out.println("\n");
+			}
+			if(PI >= PI_threshold){
+				Colocation.colocations.put(tempList, PI);
+			}					
+		}
+	}
+	
+	public void L2_old(){
 		HashMap<String, HashSet<Long>> unique = new HashMap<String, HashSet<Long>>();
 		for(int i=0;i<tempList.size();i++){
 			String key = tempList.get(i);
@@ -140,7 +209,8 @@ public class ValidateCandidate extends Thread{
 				List<Long> temp_list = new ArrayList<Long>();
 
 				for(int j =0; j < v3.size(); j++){
-						if(Colocation.areConnected(v2.get(i), v3.get(j))==true){
+//						if(Colocation.areConnected(v2.get(i), v3.get(j))==true){
+						if(Colocation.areConnected(v2.get(i), v3.get(j),type2+"-"+type3)==true){
 						unique.get(type3).add(v3.get(j));
 						temp_list.add(v3.get(j));
 						flag_inner = true;
@@ -268,7 +338,8 @@ public class ValidateCandidate extends Thread{
 							boolean flag_inner = false;
 							List<Long> temp_list = new ArrayList<Long>();
 							for (j=0; j<doc_2_value.size(); j++){
-								if(Colocation.areConnected(doc_1_value.get(i), doc_2_value.get(j))){
+//								if(Colocation.areConnected(doc_1_value.get(i), doc_2_value.get(j))){
+								if(Colocation.areConnected(doc_1_value.get(i), doc_2_value.get(j),type2+"-"+type3)){
 									flag_inner = true;
 									unique.get(type3).add((doc_2_value.get(j)));
 									temp_list.add(doc_2_value.get(j));
