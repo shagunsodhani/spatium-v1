@@ -1,4 +1,7 @@
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,7 +43,7 @@ public class Colocation {
 		this.db = new Database();
 		this.graph = this.db.connect();
 		this.total_count = new HashMap<String, Long>();
-		this.PI_threshold = 0.5;
+		this.PI_threshold = 0.1;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 		mongoDB mongoInstance = new mongoDB();
@@ -77,8 +80,7 @@ public class Colocation {
 				Map.Entry pair1 = (Map.Entry)it1.next();
 				String type2 = (String) pair1.getKey();
 				float pi = (Float) pair1.getValue();
-				System.out.println(type1+":"+type2+" = "+pi);
-//				System.out.println(type1+":"+type2);
+//				System.out.println(type1+":"+type2+" = "+pi);
 				counter++;
 			}
 		}
@@ -98,7 +100,7 @@ public class Colocation {
 				candidate = candidate+tempList.get(i)+":";				
 			}
 			candidate = candidate.substring(0, candidate.length()-1);
-			System.out.println(candidate);
+//			System.out.println(candidate);
 			counter++;
 		}		
 		System.out.println();
@@ -388,7 +390,7 @@ public class Colocation {
 		HashMap<String, HashMap<String, Float>> L2 = new HashMap<String, HashMap<String,Float>>();
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
-		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		ExecutorService executorService = Executors.newFixedThreadPool(48);
 		
 		while(it.hasNext()){
 			ValidateCandidate validateCandidate = new ValidateCandidate((List<String>) it.next(), k, create_db);
@@ -622,9 +624,21 @@ public class Colocation {
 		
 		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
 		System.out.println("Generating Colocations of Size "+k);
-		Iterator it = Ck.iterator();
+		Iterator iterator = Ck.iterator();
+		int count = 0;
+		while (iterator.hasNext()) {
+			iterator.next();
+			count++;			
+		}
+		ExecutorService executorService = null;
+		if(count<48){
+			executorService = Executors.newFixedThreadPool(count);
+		}
+		else{
+			executorService = Executors.newFixedThreadPool(48);
+		}
 		
-		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		Iterator it = Ck.iterator();
 		
 		while(it.hasNext()){
 			ValidateCandidate validateCandidate = new ValidateCandidate((List<String>) it.next(), k, create_db);
@@ -1036,13 +1050,17 @@ public class Colocation {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		
-		Colocation colocation = new Colocation();
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		System.out.println(dateFormat.format(date));
+		
+		Colocation colocation_instance = new Colocation();
 		
 //		Delete all database which contain ":" in their name
 		List<String> dbNames = mongoClient.getDatabaseNames();
 		for(int i = 0;i < dbNames.size();i++){
 			String dbName = dbNames.get(i);
-			if(dbName.contains(":")==true){
+			if(dbName.contains(":")==true || dbName.equals("spatium")){
 				System.out.println("Database dropped = "+dbName);
 				mongoClient.dropDatabase(dbName);
 			}			
@@ -1055,15 +1073,17 @@ public class Colocation {
 		print_Candidate(Ck, 2);
 		
 		for(int k = 2;;k++){
-			System.out.println("Current K is "+k);
+			date = new Date();
+			System.out.println(dateFormat.format(date));
+			
 			if(k==2){
 //				Lk = L2();
-				Lk = multithreaded_L2(Ck, 2, true);
+				Lk = multithreaded_L2(Ck, 2, false);
 			}else if (k==3) {
-				Lk = multithreaded_L3(Ck, k, true);
+				Lk = multithreaded_L3(Ck, k, false);
 //				L3(Ck, k, false);
 			}else {
-				Lk = multithreaded_L3(Ck, k, true);
+				Lk = multithreaded_L3(Ck, k, false);
 //				Lk = Lk(Ck, k, false);
 			}
 			print_Frequent(Lk, k);

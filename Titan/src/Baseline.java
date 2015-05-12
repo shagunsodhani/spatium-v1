@@ -40,7 +40,7 @@ public class Baseline {
 		this.db = new Database();
 		this.graph = this.db.connect();
 		this.total_count = new HashMap<String, Long>();
-		this.PI_threshold = 0.5;
+		this.PI_threshold = 0.1;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
 	}
@@ -293,8 +293,7 @@ public class Baseline {
 				Map.Entry pair1 = (Map.Entry)it1.next();
 				String type2 = (String) pair1.getKey();
 				float pi = (Float) pair1.getValue();
-				System.out.println(type1+":"+type2+" = "+pi);
-//				System.out.println(type1+":"+type2);
+//				System.out.println(type1+":"+type2+" = "+pi);
 				counter++;
 			}
 		}
@@ -422,7 +421,7 @@ public class Baseline {
 		HashMap<String, HashMap<String, Float>> L2 = new HashMap<String, HashMap<String,Float>>();
 		System.out.println("Generating Colocations of Size "+k);
 		Iterator it = Ck.iterator();
-		ExecutorService executorService = Executors.newFixedThreadPool(100);
+		ExecutorService executorService = Executors.newFixedThreadPool(48);
 		
 		while(it.hasNext()){
 			ValidateTraversal validateTraversal = new ValidateTraversal((List<String>) it.next(), k);
@@ -606,9 +605,24 @@ public class Baseline {
 		
 		HashMap<String, HashMap<String, Float>> Lk = new HashMap<String, HashMap<String,Float>>();
 		System.out.println("Generating Colocations of Size "+k);
+		
+		Iterator iterator = Ck.iterator();
+		int count = 0;
+		while (iterator.hasNext()) {
+			iterator.next();
+			count++;			
+		}
+		ExecutorService executorService = null;
+		if(count<24){
+			executorService = Executors.newFixedThreadPool(count);
+		}
+		else{
+			executorService = Executors.newFixedThreadPool(24);
+		}
+		
 		Iterator it = Ck.iterator();
 		
-		ExecutorService executorService = Executors.newFixedThreadPool(100);
+//		ExecutorService executorService = Executors.newFixedThreadPool(100);
 		
 		while(it.hasNext()){
 			ValidateTraversal validateTraversal = new ValidateTraversal((List<String>) it.next(), k);
@@ -806,7 +820,7 @@ public class Baseline {
 				candidate = candidate+tempList.get(i)+":";				
 			}
 			candidate = candidate.substring(0, candidate.length()-1);
-			System.out.println(candidate);
+//			System.out.println(candidate);
 			counter++;
 		}		
 		System.out.println();
@@ -820,7 +834,7 @@ public class Baseline {
 		HashMap<String, HashMap<String, Float>> Lk;
 		HashSet<List<String>> Ck = new HashSet<List<String>>();
 		Ck = L1();
-//		print_Candidate(Ck, 2);
+		print_Candidate(Ck, 2);
 		
 		for(int k = 2;k<11;k++){
 			System.out.println("Current K is "+k);

@@ -12,6 +12,7 @@ import com.mongodb.MongoCursorNotFoundException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.CreateIndexOptions;
 import com.sun.org.apache.bcel.internal.generic.L2D;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Compare;
@@ -255,7 +256,9 @@ public class ValidateCandidate extends Thread{
 				System.out.println("Total_Count = "+count_type1+":"+count_type2+":"+count_type3);
 				System.out.println("Total Count = "+coll.count()+" Total cliques are = "+total_cliques);
 			}
-			coll.createIndex(new BasicDBObject("key",1));
+			CreateIndexOptions options = new CreateIndexOptions();
+			options.background(true);
+			coll.createIndex(new BasicDBObject("key",1),options);
 			Colocation.colocations.put(tempList, pi);
 		}
 		else{
@@ -381,7 +384,9 @@ public class ValidateCandidate extends Thread{
 				}
 			}
 			else{
-				coll.createIndex(new BasicDBObject("key",1));
+				CreateIndexOptions options = new CreateIndexOptions();
+				options.background(true);
+				coll.createIndex(new BasicDBObject("key",1),options);
 				Colocation.colocations.put(tempList, ParticipationIndex);
 			}		
 		}		

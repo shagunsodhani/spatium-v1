@@ -5,6 +5,8 @@ import java.util.Properties;
 
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 
 /**
@@ -42,8 +44,9 @@ public class mongoDB {
 		HOSTNAME = prop.getProperty("mongoDB.hostname");
 		DATABASE = prop.getProperty("mongoDB.database");
 		PORT = prop.getProperty("mongoDB.port");
-		
-		mongoClient = new MongoClient( HOSTNAME , Integer.parseInt(PORT) );
+		MongoClientOptions options = MongoClientOptions.builder().connectionsPerHost(1000).build();		
+		mongoClient = new MongoClient( new ServerAddress(HOSTNAME, Integer.parseInt(PORT)) , options);
+		System.out.println(mongoClient.getMongoClientOptions().getConnectionsPerHost());
 	}
 	
 	public mongoDB(String database){
@@ -67,6 +70,9 @@ public class mongoDB {
 		HOSTNAME = prop.getProperty("mongoDB.hostname");
 		DATABASE = database;
 		PORT = prop.getProperty("mongoDB.port");
+		MongoClientOptions options = MongoClientOptions.builder().connectionsPerHost(200).build();		
+		mongoClient = new MongoClient( new ServerAddress(HOSTNAME, Integer.parseInt(PORT)) , options);
+		System.out.println(mongoClient.getMongoClientOptions().getConnectionsPerHost());
 	}
 	
 	public MongoDatabase connect(boolean verbose){

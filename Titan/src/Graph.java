@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
+import com.sun.corba.se.impl.orbutil.ObjectWriter;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.PropertyKey;
@@ -27,9 +28,11 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Query.Compare;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.groovy.Gremlin;
+import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.PipeFunction;
 
 @SuppressWarnings("deprecation")
 public class Graph {
@@ -39,8 +42,7 @@ public class Graph {
 	public static Map<String, Double> edgesMap;
 	public static HashMap<String, String> enCoding;
 	public static HashMap<String, String> deCoding;
-	
-	
+		
 	public static TitanGraph clearGraph(Database db, TitanGraph graph){
 		/**
 		 * Delete all the vertices and edges from graph database.
@@ -63,7 +65,7 @@ public class Graph {
 		PropertyKey typeKey = mgmt.makePropertyKey("type").dataType(String.class).make();
 		PropertyKey placeKey = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
 //		PropertyKey placeKeyTSI = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
-		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+		PropertyKey timeKey = mgmt.makePropertyKey("time").dataType(Long.class).make();
 		PropertyKey distanceKey = mgmt.makePropertyKey("distance").dataType(Decimal.class).make();
 		PropertyKey visibleKey = mgmt.makePropertyKey("visible").dataType(Integer.class).make();
 //		PropertyKey edgetypeKey = mgmt.make
@@ -86,7 +88,8 @@ public class Graph {
 //		mgmt.buildIndex("type", Vertex.class).addKey(typeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKeyTSI).buildCompositeIndex();
 //		mgmt.buildIndex("place", Vertex.class).addKey(placeKey).buildMixedIndex("search");
-		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).addKey(timeKey).addKey(instanceid).buildMixedIndex("search");
+//		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).addKey(timeKey).addKey(instanceid).buildMixedIndex("search");
+		mgmt.buildIndex("node",Vertex.class).addKey(typeKey).addKey(placeKey).addKey(timeKey).buildMixedIndex("search");
 //		mgmt.buildIndex("time",Vertex.class).addKey(timeKey).buildMixedIndex("search");
 		mgmt.buildIndex("distance", Edge.class).addKey(distanceKey).buildMixedIndex("search");
 //		mgmt.buildIndex("distance", Vertex.class).addKey(distanceKey).buildMixedIndex("search");
@@ -101,7 +104,8 @@ public class Graph {
 	public static void InitializeGraph(TitanGraph graph, int limit) throws Exception
 	{
 		System.out.println("InitializeGraph method called.\n");
-		int START = 0;
+		int START = 5393857;
+//		int START = 0;
 		int MAX_LIMIT = limit;
 		
 		Statement stmt;
@@ -114,7 +118,8 @@ public class Graph {
 		      
 			stmt = (Statement) conn.createStatement();
 
-		      String sql = "SELECT * FROM dataset ORDER BY date ASC LIMIT "+START+","+MAX_LIMIT;
+//		      String sql = "SELECT * FROM dataset WHERE primary_type = \""+typeString+"\" ORDER BY date ASC LIMIT "+START+","+MAX_LIMIT;
+			  String sql = "SELECT * FROM dataset ORDER BY date ASC LIMIT "+START+","+MAX_LIMIT;
 //		      System.out.println(sql);
 		      ResultSet rs = stmt.executeQuery(sql);
 //		      System.out.println("query printed");
@@ -122,10 +127,10 @@ public class Graph {
 	 		  double latitude, longitude, time = 0;
 	 		  String type = null;
 	 		  long time_1 = System.currentTimeMillis();
-	 		  int count = START;
+	 		  int count = 0;
 	 		  long time_3 = System.currentTimeMillis();
 	 		  long time_4;
-	 		  int tym;
+	 		  long tym;
 	 		  TitanTransaction graph1 = graph.newTransaction();
 	 		  
 		      while(rs.next()){
@@ -151,12 +156,13 @@ public class Graph {
 	 		     count++;
 //	 		     node.getProperty("place");
 	 		     
-	 		     if(count%100000 == 0)
+	 		     if(count%200000 == 0)
 	 		     {
+	 		    	 graph1.commit();
 	 		    	 time_4 = System.currentTimeMillis();
 	 		    	 System.out.println("Total vertices added till now = "+count+" in "+(time_4-time_3)+" ms.");
 	 		    	 time_3 = time_4;
-	 		    	 graph1.commit();
+	 		    	 
 	 		    	 graph1 = graph.newTransaction();
 	 		     }
 		      }                                   
@@ -318,7 +324,7 @@ public class Graph {
 		return (time_2-time_1);
 	}
 	
-	public static void addEdgesMultiThread(TitanGraph graph, double distance) throws InterruptedException{
+	public static void addEdgesMultiThread(TitanGraph graph, double distance1, double distance2) throws InterruptedException{
 		
 		double time1 = System.currentTimeMillis();	
 		Iterator<Vertex> iterator = graph.getVertices().iterator();
@@ -327,27 +333,35 @@ public class Graph {
 			Vertex vertex = (Vertex) iterator.next();
 			ids.add((Long) vertex.getId());
 		}
-		
+		long time_3 = System.currentTimeMillis();
+		long time_4;
 		ExecutorService executorService = Executors.newFixedThreadPool(100);
 		int i = 0;
 		TitanTransaction graph1 = graph.newTransaction();
+		
 		for(;i < ids.size();i++){
 			
 //			Vertex vertex = iterator.next();
 //			TitanTransaction graph2 = graph.newTransaction();
-			EdgeInsertion edgeInsertion = new EdgeInsertion(graph1,ids.get(i),distance);
-			System.out.println(i);
+			EdgeInsertion edgeInsertion = new EdgeInsertion(graph1,ids.get(i),distance1, distance2);
+//			System.out.println(i);
 			executorService.execute(edgeInsertion);
 			
-			if((i+1)%5001 == 0){
+			if((i+1)%1001 == 0){
 				executorService.shutdown();
 				while(!executorService.isTerminated()){
 					;
 				}
-				System.out.println("All the threads terminated successfully");
+				
+//				System.out.println("All the threads terminated successfully");
+				
 				graph1.commit();
+				time_4 = System.currentTimeMillis();
+				System.out.println(i+" : Time required is = "+(time_4-time_3));
+				time_3 = time_4;
 				executorService = Executors.newFixedThreadPool(100);
 				graph1 = graph.newTransaction();
+				
 			}
 		
 		}
@@ -447,7 +461,7 @@ public class Graph {
 		System.out.println("Vertices of type = "+type+" removed.");
 	}
 
-	public static void removeEdges(TitanTransaction graph){
+	public static void removeEdges(TitanGraph graph){
 		/*
 		 * Removes all edges of the form type1-type2 and type2-type1
 		 */
@@ -456,8 +470,8 @@ public class Graph {
 					
 			for (Iterator<Edge> iterator = graph.getEdges().iterator(); iterator.hasNext();) {
 				Edge edge = iterator.next();
-				edge.getVertex(Direction.IN).setProperty("visible", 1);
-				edge.getVertex(Direction.OUT).setProperty("visible", 1);
+//				edge.getVertex(Direction.IN).setProperty("visible", 1);
+//				edge.getVertex(Direction.OUT).setProperty("visible", 1);
 				edge.remove();
 				counter++;
 			}
@@ -616,7 +630,7 @@ public class Graph {
 		
 	}
 	
-	public static void exploreNeighboursGeoMultiThread(TitanGraph graph, double distance) {
+	public static void exploreNeighboursGeoMultiThread(TitanGraph graph, double distance1, double distance2) {
 
 		
 		double time1 = System.currentTimeMillis();
@@ -629,7 +643,7 @@ public class Graph {
 		for(i = 0;iterator.hasNext();i++){
 			
 			Vertex vertex = iterator.next();
-			ExploreNeighbours exploreNeighbours = new ExploreNeighbours(graph,vertex,distance);
+			ExploreNeighbours exploreNeighbours = new ExploreNeighbours(graph,vertex,distance1,distance2);
 			executorService.execute(exploreNeighbours);
 //			threads[i] = new Thread(exploreNeighbours);
 //			threads[i].start();			
@@ -703,7 +717,7 @@ public class Graph {
 //		System.out.print("Time excluding I/O "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
 		return (time_2-time_1);
 	}
-	
+		
 	public static void exploreNeighboursEdge(TitanGraph graph, double distance) {
 		
 		System.out.println("Exploring neighbours using Edge Traversal");
@@ -727,14 +741,11 @@ public class Graph {
 		System.out.println("Total time = "+(time_2-time_1)+" for "+counter+" nodes");
 		System.out.print("Time excluding initial query "+time +" for "+counter+" nodes and avg. time is "+(time/counter)+"\n");
 	}
-	
+			
 	public static void main(String[] args) throws Exception {
 		
 		Graph.countMap = new ConcurrentHashMap<String,Integer>();
 		Graph.edgesMap = new ConcurrentHashMap<String,Double>();
-		
-		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		Date date = new Date();
 		
 		// Mapper to map crime types to simple strings
 		Mapper mapper = new Mapper();
@@ -744,15 +755,33 @@ public class Graph {
 		// Step 0 : Open Graph Database Connection
 		Database db = new Database();
 		TitanGraph graph = db.connect();
-		
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
 		System.out.println(dateFormat.format(date));
-//		boolean clean = false, initialize = false, addEdges = true;
 //		boolean clean = true, initialize = true, addEdges = false;
+		boolean clean = false, initialize = false, addEdges = true;
 //		boolean clean = false, initialize = false, addEdges = false;
-		boolean clean = true, initialize = true, addEdges = true;
+//		boolean clean = true, initialize = true, addEdges = true;
+//		boolean clean = false, initialize = true, addEdges = false;
+//		boolean clean = true, initialize = false, addEdges = false;
+//		removeEdges(graph);
 		
-		int no_of_instances = 10000;
+		int no_of_instances = 30000;
 		double distance_threshold = 0.3;
+		
+//		for(int i = 10000; i<=100000;i+=10000){
+//			if(clean){
+//				// Step 1 : Clear initial graph
+//				graph = clearGraph(db, graph);
+//				// Step 2 : Build Schema
+//				build_schema(graph);
+//			}
+//			if(initialize){
+//				// Step 3 : Initialize Graph Database
+//				InitializeGraph(graph, i);
+//				System.out.println("Graph initialized for i = "+i);
+//			}			
+//		}
 		
 		if(clean){
 			// Step 1 : Clear initial graph
@@ -762,21 +791,19 @@ public class Graph {
 		}
 		if(initialize){
 			// Step 3 : Initialize Graph Database
-			InitializeGraph(graph,no_of_instances);
+			InitializeGraph(graph, no_of_instances);
 			System.out.println("Graph initialized");
 		}
 		if(addEdges){
-			// Step 4 : Build edges for some distance threshold
-			addEdgesMultiThread(graph, distance_threshold);
+			// Step 4 : Build edges for some distance thresholdtrue
+			addEdgesMultiThread(graph, distance_threshold, distance_threshold);
+			iterateEdges(graph);
 		}
-
+		
 		// Step 4 : Generate stats
 //		stats(graph1);
-		
-		
-//		addEdges(graph, 0.3);
-		iterateEdges(graph);
-		
+//		iterateEdges(graph);
+//		exploreNeighboursGeoMultiThread(graph, distance_threshold,0.5);
 		date = new Date();
 		System.out.println(dateFormat.format(date));
 		
@@ -789,7 +816,158 @@ public class Graph {
 //		Graph.countMap = new ConcurrentHashMap<String,Integer>();
 
 //		exploreNeighboursGeo(graph, 0.2);
-//		exploreNeighboursGeoMultiThread(graph, 0.2);
+
+//		Iterator<Vertex> it = graph.query().has("type", com.tinkerpop.blueprints.Compare.EQUAL,"3").vertices().iterator();
+//		while (it.hasNext()) {
+//			Vertex vertex = (Vertex) it.next();true
+//			GremlinPipeline<String, Vertex> g = new GremlinPipeline<String, Vertex>(graph.getVertex(vertex.getId())).in().as("l1").in().as("l2");
+////			Iterator<Pipe<String, Vertex>> a = g.getPipes().iterator().next();
+////			
+////			while(a.hasNext()){
+////				System.out.println(a.next());
+////			}
+//			
+//			System.out.println(vertex.getId()+" "+vertex.getProperty("type"));
+//			Iterator<Vertex> it1 = g.iterator();
+//			while (it1.hasNext()) {
+//				Vertex vertex2 = (Vertex) it1.next();
+//				System.out.println(vertex2.getId()+"-----"+vertex2.getProperty("type"));
+//			}
+//			System.out.println("--------------------");
+//		}
+//		long time1 = System.currentTimeMillis();
+//		int counter = 0;
+//		Iterator<Vertex> it = graph.getVertices("type", "3").iterator(); 
+//		while(it.hasNext()){
+//			final Vertex vertex = it.next();
+//			GremlinPipeline pipe = new GremlinPipeline();
+//			pipe.start(vertex).in("3-7").in("7-32").out("3-32").filter(new PipeFunction<Vertex,Boolean>() {
+//				  public Boolean compute(Vertex argument) {
+//					  if((Long)argument.getId() == vertex.getId()){
+//						  return true;
+//					  }else{
+//						  return false;
+//					  }
+//					  }
+//					}).path(new PipeFunction<Vertex, Long>(){
+//				public Long compute(Vertex argument) {
+//					return (Long) argument.getId();
+//				}
+//			});
+//			counter += pipe.count();
+//		}
+//		long time2 = System.currentTimeMillis();
+//		System.out.println("Total = "+counter+ " ");
+//		final String x = null;
+		
+		
+		
+		
+//		final List<Vertex> temp = new ArrayList<Vertex>();
+////		String 'x';
+////		final long id;
+//		pipe.start(graph.getVertices("type","30")).sideEffect(new PipeFunction<Vertex, Vertex>(){
+//			public Vertex compute(Vertex argument){
+//				if(temp.size()>0){
+//					temp.remove(temp.size()-1);
+//				}
+//				temp.add(argument);
+//				return argument;
+//			}
+//			}).in("30-31").out("30-31").filter(new PipeFunction<Vertex,Boolean>() {
+//			  public Boolean compute(Vertex argument) {
+////				  if(argument== x){
+////					  return true;
+////				  }else{
+////					  return false;
+////				  }
+////				  System.out.println(x);
+//				  if(temp.contains(argument)){
+//					  return true;
+//				  }
+//				  else{
+//					  return false;
+//				  }				  
+//				  }
+//				}).path(new PipeFunction<Vertex, Long>(){
+//			public Long compute(Vertex argument) {
+//				return (Long) argument.getId();
+//			}
+//		}).enablePath();
+		
+		
+		
+		
+		
+//		pipe.start(graph.getVertices()).filter(new PipeFunction<Vertex,Boolean>() 
+//				{
+//					  public Boolean compute(Vertex argument) 
+//					  {
+//						  if(argument.getProperty("type").equals("3"))
+//						      {
+//							      return true;
+//						  	  }
+//						  else
+//						  	  {
+//							      return false;
+//						  	  }
+//					   }
+//				}).as('x').in("3-7").in("7-32").out("3-32").filter(new PipeFunction<Vertex,Boolean>() {
+//			  public Boolean compute(Vertex argument) {
+//				  if(argument== x){
+//					  return true;
+//				  }else{
+//					  return false;
+//				  }
+//				  }
+//				}).path(new PipeFunction<Vertex, Long>(){
+//			public Long compute(Vertex argument) {
+//				return (Long) argument.getId();
+//			}
+//		});
+			
+//		Iterator it = pipe.iterator();
+//		while(it.hasNext()){
+//			System.out.println(pipe.next());
+//		}
+		
+//		GremlinPipeline<String, Vertex> g = new GremlinPipeline<String, Vertex>(graph.getVertex(2095104)).out("7-32");
+//		Iterator<Vertex> it = g.iterator();
+//		while(it.hasNext()){
+//			Vertex v = it.next();
+//			System.out.println(v.getProperty("type")+" ---- "+v.getId());
+//			GremlinPipeline<String, Vertex> g1 = new GremlinPipeline<String, Vertex>(graph.getVertex(v.getId())).out("3-7");
+//			Iterator<Vertex> it1 = g1.iterator();
+//			while(it1.hasNext()){
+//				Vertex v1 = it1.next();
+//				System.out.println(v.getProperty("type")+" ---- "+v1.getId());
+//			}
+//		}
+		
+//		Iterator<Vertex> it = graph.query().vertices().iterator();
+//		while(it.hasNext()){
+//			Vertex x = it.next();
+//			System.out.println(x.getId()+" "+x.getProperty("type")+" => ");
+//			Iterator<Vertex> it1 = x.getVertices(Direction.IN).iterator();
+//			while (it1.hasNext()) {
+//				Vertex vertex = (Vertex) it1.next();
+//				System.out.print(vertex.getId()+" "+vertex.getProperty("type")+" ");
+//			}
+//			System.out.println("");
+//		}
+		
+//		Iterator<Vertex> it = graph.query().has("type", com.tinkerpop.blueprints.Compare.EQUAL,"32").vertices().iterator();
+//		while(it.hasNext()){
+////			System.out.println("Hi");
+//			Vertex x = it.next();
+//			Iterator<Vertex> it1 = x.getVertices(Direction.OUT).iterator();
+////			Iterator<Vertex> it1 = x.query().has("type", "3").direction(Direction.OUT).has("type", "29").direction(Direction.OUT).vertices().iterator();
+//			while(it1.hasNext()){
+//				System.out.print(x.getId()+" - "+it1.next().getProperty("type")+" ");
+//			}
+//			System.out.println("-----");			
+//		}
+		
 		
 		// Step 8 : Close Graph Database Connection
 		db.close(graph);
