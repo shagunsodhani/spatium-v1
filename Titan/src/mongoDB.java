@@ -3,88 +3,70 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 
-/**
- * 
- */
+public class MongoDB {
+	
+	private static MongoClient mMongoClient;
+	private String databaseName;
+	
+	public MongoDB(){
+		Properties prop = new Properties();
+		InputStream input = null;
+		try {	 
+			input = new FileInputStream("config/config.properties");
+			prop.load(input);
+			input.close();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		databaseName = prop.getProperty("mongoDB.database");
+		if (mMongoClient == null){
+			String hostname, port, mongoConnectionsPerHost;
+			hostname = prop.getProperty("mongoDB.hostname");
+			port = prop.getProperty("mongoDB.port");
+			mongoConnectionsPerHost = prop.getProperty("mongoDB.connectionsPerHost");
 
-/**
- * @author precise
- *
- */
-public class mongoDB {
+			MongoClientOptions options = MongoClientOptions.builder().connectionsPerHost(Integer.parseInt(mongoConnectionsPerHost)).build();		
+			mMongoClient = new MongoClient( new ServerAddress(hostname, Integer.parseInt(port)) , options);
+		}
+	}
 	
-	static String HOSTNAME,PORT;
-	String DATABASE;
-	public static MongoClient mongoClient;
 	
-	public mongoDB(){
+	public MongoDB(String database){
+		
 		Properties prop = new Properties();
 		InputStream input = null;
 		try {	 
 			input = new FileInputStream("config/config.properties");
 			prop.load(input);
+			input.close();
 		} catch (IOException ex) {
 			ex.printStackTrace();
-		} finally {
-			if (input != null) {
-				try {
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-					}
-				}
-			}
-		
-		HOSTNAME = prop.getProperty("mongoDB.hostname");
-		DATABASE = prop.getProperty("mongoDB.database");
-		PORT = prop.getProperty("mongoDB.port");
-		MongoClientOptions options = MongoClientOptions.builder().connectionsPerHost(1000).build();		
-		mongoClient = new MongoClient( new ServerAddress(HOSTNAME, Integer.parseInt(PORT)) , options);
-		System.out.println(mongoClient.getMongoClientOptions().getConnectionsPerHost());
+		}
+		databaseName = database;
+		if (mMongoClient == null){
+			String hostname, port, mongoConnectionsPerHost;
+			hostname = prop.getProperty("mongoDB.hostname");
+			port = prop.getProperty("mongoDB.port");
+			mongoConnectionsPerHost = prop.getProperty("mongoDB.connectionsPerHost");
+			
+			MongoClientOptions options = MongoClientOptions.builder().connectionsPerHost(Integer.parseInt(mongoConnectionsPerHost)).build();		
+			mMongoClient = new MongoClient( new ServerAddress(hostname, Integer.parseInt(port)) , options);
+		}
 	}
 	
-	public mongoDB(String database){
-		Properties prop = new Properties();
-		InputStream input = null;
-		try {	 
-			input = new FileInputStream("config/config.properties");
-			prop.load(input);
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		} finally {
-			if (input != null) {
-				try {
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-					}
-				}
-			}
-		
-		HOSTNAME = prop.getProperty("mongoDB.hostname");
-		DATABASE = database;
-		PORT = prop.getProperty("mongoDB.port");
-		MongoClientOptions options = MongoClientOptions.builder().connectionsPerHost(200).build();		
-		mongoClient = new MongoClient( new ServerAddress(HOSTNAME, Integer.parseInt(PORT)) , options);
-		System.out.println(mongoClient.getMongoClientOptions().getConnectionsPerHost());
-	}
-	
-	public MongoDatabase connect(boolean verbose){
-				
-		MongoDatabase db = mongoClient.getDatabase(DATABASE);
+	public MongoDatabase getMongoDatabase(boolean verbose){
 		if(verbose==true){
-			System.out.println("Connection opened with MongoDB database named "+DATABASE);
+			System.out.println("Connection opened with MongoDB database named "+databaseName);
 		}		
-		return db;
+		return mMongoClient.getDatabase(databaseName);
 	}
 	
-	public void disconnect(MongoDatabase db){
-	
+	public MongoClient getMongoClient(){
+		return mMongoClient;
 	}
 }
