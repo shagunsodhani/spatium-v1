@@ -7,57 +7,45 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 public class MySql {
-
-	    static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-		static String DB_URL;
-	    static String USER,PASS,HOSTNAME,DATABASE,TABLE;
-	    		
-		public MySql(){
-			this.DB_URL = "jdbc:mysql://";
-//			connect();
-		}	    
-	    
-	    public Connection connect() {			   
-			Properties prop = new Properties();
-			InputStream input = null;
-			try {	 
-//				input = new FileInputStream("/home/precise/spatium/Titan/config/config.properties");
-				input = new FileInputStream("config/config.properties");
-//				input = new FileInputStream("../config/config.properties");
-				prop.load(input);
-		 
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			} finally {
-				if (input != null) {
-					try {
-						input.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-						}
-					}
-				}
-			
-			USER = prop.getProperty("mysql.user");
-			PASS = prop.getProperty("mysql.passwd");
-			HOSTNAME = prop.getProperty("mysql.hostname");
-			DATABASE = prop.getProperty("mysql.database");
-			DB_URL = DB_URL+HOSTNAME+"/"+DATABASE;
-			   
-			Connection conn = null;
-			try{
-			      Class.forName("com.mysql.jdbc.Driver");
-			      System.out.println("Connecting to a selected database..."+DB_URL);
-			      conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			      System.out.println("Connected database successfully...");
-			      return conn;
-			   }catch(SQLException se){
-			      //Handle errors for JDBC
-			      se.printStackTrace();
-			   }catch(Exception e){
-			      //Handle errors for Class.forName
-			      e.printStackTrace();
-			   }
-			return conn;
-			}
+	
+	private Connection mConnection;
+	
+	public MySql() {
+		
+		String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
+		String DB_URL = "jdbc:mysql://";
+	    String USER, PASS, HOSTNAME, DATABASE;
+	    Properties prop = new Properties();
+		InputStream input = null;
+		try {	 
+			input = new FileInputStream("config/config.properties");
+			prop.load(input);
+			input.close();
+	 
 		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		USER = prop.getProperty("mysql.user");
+		PASS = prop.getProperty("mysql.passwd");
+		HOSTNAME = prop.getProperty("mysql.hostname");
+		DATABASE = prop.getProperty("mysql.database");
+		DB_URL = DB_URL+HOSTNAME+"/"+DATABASE;
+		
+		try{
+			Class.forName(JDBC_DRIVER);
+		    System.out.println("Connecting to Mysql database : "+DB_URL);
+		    mConnection = DriverManager.getConnection(DB_URL, USER, PASS);
+		    System.out.println("Connected to database succesfully");
+		}
+		catch(SQLException | ClassNotFoundException e){
+			//Handle errors for JDBC and ClassnotFoundException
+		    e.printStackTrace();
+		}
+	}
+    
+	public Connection getConnection() {
+		return mConnection;
+	}
+}
