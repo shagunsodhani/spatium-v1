@@ -1,87 +1,54 @@
-import java.awt.print.Printable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import org.elasticsearch.bootstrap.Elasticsearch;
-import org.elasticsearch.search.aggregations.support.format.ValueFormatter.GeoHash;
 
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
-import com.sleepycat.je.latch.Latch;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.attribute.Geoshape.Point;
-import com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex;
-import com.tinkerpop.blueprints.Compare;
-import com.vividsolutions.jts.triangulate.quadedge.Vertex;
-
 
 public class Visualization {
 	
 	public static Map<Geoshape, Integer> typeDist; 
-		
-	public static void writeDB() throws SQLException{
-		
+	
+	public static void writeDB() throws SQLException{	
 		Statement stmt;
-		MySql mySql = new MySql();
-		Connection conn = (Connection) mySql.connect();
-		if (conn == null) {
+		Connection connection  = (Connection) new MySql().getConnection();
+		if (connection == null) {
 			System.out.println("Connection Error!!");
 		}
 		else{
 			System.out.println("Creating statement...");
-		      
-			  stmt = (Statement) conn.createStatement();
-			  String sql_truncate = "TRUNCATE results";
-			  stmt.executeUpdate(sql_truncate);
-			  
-			  String sql = "INSERT INTO results (latitude, longitude, count) VALUES ";
-			  Iterator it = typeDist.entrySet().iterator();
-			  Geoshape point = null;
-			  double latitude, longitude;
-			  int count;
-			  
-			  while (it.hasNext())
-			  {
-			        Map.Entry pairs = (Map.Entry)it.next();
-			        point = (Geoshape)pairs.getKey();
-			        latitude = point.getPoint().getLatitude();
-			        longitude = point.getPoint().getLongitude();
-			        count = (Integer)pairs.getValue();
-			        sql = sql+"("+latitude+","+longitude+","+count+"), ";
-			  }
-			  sql = sql.substring(0, sql.length()-2);
-//			  System.out.println(sql);
-			  
-			  int rs = stmt.executeUpdate(sql);
-			  
-		    try{
-		         if(stmt!=null)
-		            conn.close();
-		      }catch(SQLException se){
-		      }// do nothing
-		      try{
-		         if(conn!=null)
-		            conn.close();
-		      }catch(SQLException se){
-		         se.printStackTrace();
-		      }
+			stmt = (Statement) connection.createStatement();
+			String sql_truncate = "TRUNCATE results";
+			stmt.executeUpdate(sql_truncate);
+			String sql = "INSERT INTO results (latitude, longitude, count) VALUES ";
+			Iterator it = typeDist.entrySet().iterator();
+			Geoshape point = null;
+			double latitude, longitude;
+			int count; 
+			while (it.hasNext()){
+				Map.Entry pairs = (Map.Entry)it.next();
+			    point = (Geoshape)pairs.getKey();
+			    latitude = point.getPoint().getLatitude();
+			    longitude = point.getPoint().getLongitude();
+			    count = (Integer)pairs.getValue();
+			    sql = sql+"("+latitude+","+longitude+","+count+"), ";
+			}
+			sql = sql.substring(0, sql.length()-2);
+			int rs = stmt.executeUpdate(sql);
 		}
 	}
 	
 	public static void main(String[] args) throws IOException, InterruptedException{
 		
 		typeDist = new ConcurrentHashMap<Geoshape, Integer>();
-		
 		BufferedReader br = new BufferedReader( new InputStreamReader(System.in));
 		String type = br.readLine();
 //		String type = args[0];
@@ -92,8 +59,8 @@ public class Visualization {
 //		String type = args[0];
 		System.out.println("Type is "+type);
 		
-		Database db = new Database();
-		TitanGraph graph = db.connect();
+		Database db = Database.getInstance();
+		TitanGraph graph = db.getTitanGraph();
 		ExecutorService executorService = Executors.newFixedThreadPool(100);
 		System.out.println("All the threads created successfully");
 				
@@ -129,11 +96,8 @@ public class Visualization {
 		try {
 			writeDB();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-//		graph.commit();
-		
-		db.close(graph);
+		db.closeTitanGraph(graph);
 	}
 }

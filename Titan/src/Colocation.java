@@ -40,15 +40,15 @@ public class Colocation {
 	public static MongoClient mongoClient;
 	
 	public Colocation(){
-		this.db = new Database();
-		this.graph = this.db.connect();
+		this.db = Database.getInstance();
+		this.graph = this.db.getTitanGraph();
 		this.total_count = new HashMap<String, Long>();
 		this.PI_threshold = 0.1;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
-		mongoDB mongoInstance = new mongoDB();
-		this.mongoClient = mongoDB.mongoClient;
-		this.mongodb = mongoInstance.connect(true);
+		MongoDB mongoInstance = new MongoDB();
+		this.mongoClient = mongoInstance.getMongoClient();
+		this.mongodb = mongoInstance.getMongoDatabase(true);
 	}
 	
 	public Colocation(Database db, TitanGraph graph){
@@ -58,9 +58,9 @@ public class Colocation {
 		this.PI_threshold = 0.001;
 		this.verbose = false;
 		this.colocations = new ConcurrentHashMap<List<String>,Float>();
-		mongoDB mongoInstance = new mongoDB();
-		this.mongoClient = mongoDB.mongoClient;
-		this.mongodb = mongoInstance.connect(true);
+		MongoDB mongoInstance = new MongoDB();
+		this.mongoClient = mongoInstance.getMongoClient();
+		this.mongodb = mongoInstance.getMongoDatabase(true);
 	}
 	
 	public static void print_Frequent(HashMap<String, HashMap<String, Float>> Lk, int k){
@@ -464,8 +464,8 @@ public class Colocation {
 			if (create_db==true){
 				
 //				mongoDB new_mongoInstance = new mongoDB(type1+":"+type2+":"+type3);
-				mongoDB new_mongoInstance = new mongoDB(dbname1);
-				MongoDatabase new_mongodb = new_mongoInstance.connect(false);
+				MongoDB new_mongoInstance = new MongoDB(dbname1);
+				MongoDatabase new_mongodb = new_mongoInstance.getMongoDatabase(false);
 //				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
 				coll = new_mongodb.getCollection(dbname1);
 			}
@@ -729,14 +729,14 @@ public class Colocation {
 //				mongoDB new_mongoInstance_1 = new mongoDB(type1+":"+type2);
 //				mongoDB new_mongoInstance_2 = new mongoDB(type1+":"+type3);
 				
-				mongoDB new_mongoInstance = new mongoDB(dbname1);
-				mongoDB new_mongoInstance_1 = new mongoDB(dbname2);
-				mongoDB new_mongoInstance_2 = new mongoDB(dbname3);
+				MongoDB new_mongoInstance = new MongoDB(dbname1);
+				MongoDB new_mongoInstance_1 = new MongoDB(dbname2);
+				MongoDB new_mongoInstance_2 = new MongoDB(dbname3);
 		
 
-				MongoDatabase new_mongodb = new_mongoInstance.connect(false);
-				MongoDatabase new_mongodb_1 = new_mongoInstance_1.connect(false);
-				MongoDatabase new_mongodb_2 = new_mongoInstance_2.connect(false);
+				MongoDatabase new_mongodb = new_mongoInstance.getMongoDatabase(false);
+				MongoDatabase new_mongodb_1 = new_mongoInstance_1.getMongoDatabase(false);
+				MongoDatabase new_mongodb_2 = new_mongoInstance_2.getMongoDatabase(false);
 				
 //				coll = new_mongodb.getCollection(type1+":"+type2+":"+type3);
 //				coll_1 = new_mongodb_1.getCollection(type1+":"+type2);
@@ -1095,7 +1095,7 @@ public class Colocation {
 			}
 		}		
 		
-		db.close(graph);
+		db.closeTitanGraph(graph);
 		
 	}
 }

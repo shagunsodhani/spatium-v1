@@ -5,7 +5,6 @@ import java.util.HashMap;
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
 
-
 public class Mapper{
 	
 	public HashMap<String, String> enCoding;
@@ -20,10 +19,7 @@ public class Mapper{
 	public void init() throws SQLException
 	{
 		Statement stmt;
-		
-		MySql mySql = new MySql();		
-		Connection connection = (Connection) mySql.connect();
-		
+		Connection connection  = (Connection) new MySql().getConnection();		
 		if (connection == null) {
 			System.out.println("Connection Error!!");
 		}else{

@@ -1,14 +1,10 @@
 import java.util.Iterator;
 
-import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
-
-import com.esotericsoftware.minlog.Log.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.Query.Compare;
-
 
 public class WorkThread extends Thread{
 	
@@ -45,8 +41,8 @@ public class WorkThread extends Thread{
 			Geoshape point = vertex.getProperty("place");
 			Visualization.typeDist.put(point, count);
 		}
-//		long threadId = Thread.currentThread().getId();
-//        System.out.println("Thread # " + threadId + " is doing this task");
+		long threadId = Thread.currentThread().getId();
+        System.out.println("Thread # " + threadId + " is doing this task");
 	}
 
 }

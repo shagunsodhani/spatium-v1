@@ -34,15 +34,17 @@ public class TypeDistribution {
 		public static void writeDB() throws SQLException{
 			
 			Statement stmt;
-			MySql mySql = new MySql();
-			Connection conn = (Connection) mySql.connect();
-			if (conn == null) {
+			Connection connection  = (Connection) new MySql().getConnection();
+			
+//			MySql mySql = new MySql();
+//			Connection conn = (Connection) mySql.connect();
+			if (connection == null) {
 				System.out.println("Connection Error!!");
 			}
 			else{
 				System.out.println("Creating statement...");
 			      
-				  stmt = (Statement) conn.createStatement();
+				  stmt = (Statement) connection.createStatement();
 				  String sql_truncate = "TRUNCATE results";
 				  stmt.executeUpdate(sql_truncate);
 				  
@@ -63,12 +65,12 @@ public class TypeDistribution {
 				  
 			    try{
 			         if(stmt!=null)
-			            conn.close();
+			            connection.close();
 			      }catch(SQLException se){
 			      }// do nothing
 			      try{
-			         if(conn!=null)
-			            conn.close();
+			         if(connection!=null)
+			            connection.close();
 			      }catch(SQLException se){
 			         se.printStackTrace();
 			      }
@@ -91,8 +93,8 @@ public class TypeDistribution {
 //			String type = args[0];
 			System.out.println("Type is "+type);
 			
-			Database db = new Database();
-			TitanGraph graph = db.connect();
+			Database db = Database.getInstance();
+			TitanGraph graph = db.getTitanGraph();
 			ExecutorService executorService = Executors.newFixedThreadPool(100);
 					
 			double startLat = 41.644580105,startLong = -87.934324986,endLat = 42.023024908,endLong = -87.524388789;
@@ -139,7 +141,7 @@ public class TypeDistribution {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			db.close(graph);
+			db.closeTitanGraph(graph);
 		}
 
 }

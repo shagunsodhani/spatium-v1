@@ -49,11 +49,11 @@ public class Graph {
 		 * This closes the connection to graph database as well and reopens a database connection and return graph instance
 		 */
 	
-		db.close(graph);
+		db.closeTitanGraph(graph);
 		TitanCleanup.clear(graph);
 		System.out.println("Cleared the graph");
 		
-		TitanGraph clear_graph = db.connect();
+		TitanGraph clear_graph = db.getTitanGraph();
 		return clear_graph;
 	}
 	
@@ -109,14 +109,18 @@ public class Graph {
 		int MAX_LIMIT = limit;
 		
 		Statement stmt;
-		MySql mySql = new MySql();
-		Connection conn = (Connection) mySql.connect();
-		if (conn == null) {
+		
+		Connection connection  = (Connection) new MySql().getConnection();
+		
+//		MySql mySql = new MySql();
+//		Connection conn = (Connection) mySql.connect();
+		
+		if (connection == null) {
 			System.out.println("Connection Error!!");
 		}else{
 //			System.out.println("Creating statement...");
 		      
-			stmt = (Statement) conn.createStatement();
+			stmt = (Statement) connection.createStatement();
 
 //		      String sql = "SELECT * FROM dataset WHERE primary_type = \""+typeString+"\" ORDER BY date ASC LIMIT "+START+","+MAX_LIMIT;
 			  String sql = "SELECT * FROM dataset ORDER BY date ASC LIMIT "+START+","+MAX_LIMIT;
@@ -174,12 +178,12 @@ public class Graph {
 		    
 		    try{
 		         if(stmt!=null)
-		            conn.close();
+		            connection.close();
 		      }catch(SQLException se){
 		      }// do nothing
 		      try{
-		         if(conn!=null)
-		            conn.close();
+		         if(connection!=null)
+		            connection.close();
 		      }catch(SQLException se){
 		         se.printStackTrace();
 		      }
@@ -753,8 +757,8 @@ public class Graph {
 		Graph.deCoding = mapper.getDecoding();
 		
 		// Step 0 : Open Graph Database Connection
-		Database db = new Database();
-		TitanGraph graph = db.connect();
+		Database db = Database.getInstance();
+		TitanGraph graph = db.getTitanGraph();
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Date date = new Date();
 		System.out.println(dateFormat.format(date));
@@ -970,6 +974,6 @@ public class Graph {
 		
 		
 		// Step 8 : Close Graph Database Connection
-		db.close(graph);
+		db.closeTitanGraph(graph);
 	}
 }

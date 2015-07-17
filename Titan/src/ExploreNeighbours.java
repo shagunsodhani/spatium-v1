@@ -1,13 +1,10 @@
 import java.util.Iterator;
 
-import org.elasticsearch.common.unit.DistanceUnit.Distance;
-
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.Query.Compare;
-
 
 public class ExploreNeighbours extends Thread{
 	
@@ -16,7 +13,6 @@ public class ExploreNeighbours extends Thread{
 	public double original_distance, new_distance;
 	
 	public ExploreNeighbours(TitanGraph graph, Vertex vertex, double distance){
-		// TODO Auto-generated constructor stub
 		this.graph = graph;
 		this.vertex = vertex;
 		this.original_distance = distance;
@@ -24,17 +20,14 @@ public class ExploreNeighbours extends Thread{
 	}
 	
 	public ExploreNeighbours(TitanGraph graph, Vertex vertex, double distance1, double distance2){
-		// TODO Auto-generated constructor stub
 		this.graph = graph;
 		this.vertex = vertex;
 		this.original_distance = distance1;
 		this.new_distance = distance2;
-		
 	}
 	
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
 		int count = 0;
 		Geoshape pointGeoshape = vertex.getProperty("place");
 		double latitude = pointGeoshape.getPoint().getLatitude();
@@ -42,14 +35,12 @@ public class ExploreNeighbours extends Thread{
 		String type = vertex.getProperty("type");
 		
 		if(original_distance==new_distance){
-			for(Iterator<Vertex>iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, original_distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator()
-					;	iterator2.hasNext();){
+			for(Iterator<Vertex>iterator2 = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, original_distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator(); iterator2.hasNext();){
 				Vertex vertex2 = iterator2.next();
 				count++;
 			}
 		}else{
-			for(Iterator<Vertex>iterator2  = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, new_distance)).has("place", Geo.DISJOINT, Geoshape.circle(latitude, longitude, original_distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator()
-					;	iterator2.hasNext();){
+			for(Iterator<Vertex>iterator2 = graph.query().has("place", Geo.WITHIN, Geoshape.circle(latitude, longitude, new_distance)).has("place", Geo.DISJOINT, Geoshape.circle(latitude, longitude, original_distance)).has("type",Compare.NOT_EQUAL, type).vertices().iterator(); iterator2.hasNext();){
 				Vertex vertex2 = iterator2.next();
 				count++;
 			}

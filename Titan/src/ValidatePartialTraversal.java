@@ -141,8 +141,8 @@ public class ValidatePartialTraversal extends Thread{
 		MongoCollection<Document> coll ;
 //		MongoDatabase new_mongodb;
 		if (create_db==true){
-			mongoDB new_mongoInstance = new mongoDB(dbname1);
-			MongoDatabase new_mongodb = new_mongoInstance.connect(false);
+			MongoDB new_mongoInstance = new MongoDB(dbname1);
+			MongoDatabase new_mongodb = new_mongoInstance.getMongoDatabase(false);
 			coll = new_mongodb.getCollection(dbname1);
 		}
 		else{
@@ -267,13 +267,13 @@ public class ValidatePartialTraversal extends Thread{
 //		System.out.println(dbname1+"----"+dbname2+"-----"+dbname3);
 		
 		if (create_db==true){
-			mongoDB new_mongoInstance = new mongoDB(dbname1);
-			mongoDB new_mongoInstance_1 = new mongoDB(dbname2);
-			mongoDB new_mongoInstance_2 = new mongoDB(dbname3);
+			MongoDB new_mongoInstance = new MongoDB(dbname1);
+			MongoDB new_mongoInstance_1 = new MongoDB(dbname2);
+			MongoDB new_mongoInstance_2 = new MongoDB(dbname3);
 			
-			MongoDatabase new_mongodb = new_mongoInstance.connect(false);
-			MongoDatabase new_mongodb_1 = new_mongoInstance_1.connect(false);
-			MongoDatabase new_mongodb_2 = new_mongoInstance_2.connect(false);
+			MongoDatabase new_mongodb = new_mongoInstance.getMongoDatabase(false);
+			MongoDatabase new_mongodb_1 = new_mongoInstance_1.getMongoDatabase(false);
+			MongoDatabase new_mongodb_2 = new_mongoInstance_2.getMongoDatabase(false);
 			
 			coll = new_mongodb.getCollection(dbname1);
 			coll_1 = new_mongodb_1.getCollection(dbname2);

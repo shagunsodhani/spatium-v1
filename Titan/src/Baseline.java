@@ -8,22 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.cassandra.cli.CliParser.newColumnFamily_return;
-import org.apache.solr.update.processor.Lookup3Signature;
-import org.bson.Document;
-
-import com.mongodb.BasicDBObject;
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoDatabase;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.gremlin.groovy.Gremlin;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
 import com.tinkerpop.pipes.PipeFunction;
 
@@ -37,8 +24,8 @@ public class Baseline {
 	public static ConcurrentHashMap<List<String>,Float>  colocations;
 	
 	public Baseline(){
-		this.db = new Database();
-		this.graph = this.db.connect();
+		this.db = Database.getInstance();
+		this.graph = this.db.getTitanGraph();
 		this.total_count = new HashMap<String, Long>();
 		this.PI_threshold = 0.1;
 		this.verbose = false;
@@ -56,12 +43,12 @@ public class Baseline {
 	
 	public static boolean areConnected(long id1, long id2) 
 	{	
-		Vertex vertex = graph.getVertex(id1);
-		String type = vertex.getProperty("type");
+		Vertex vertex1 = graph.getVertex(id1);
+		String type1 = vertex1.getProperty("type");
 		Vertex vertex2 = graph.getVertex(id2);
 		String type2 = vertex2.getProperty("type");
-		if(Integer.parseInt(type) < Integer.parseInt(type2)){
-			for(Iterator<Vertex> it = vertex.getVertices(Direction.IN,type+"-"+type2).iterator();
+		if(Integer.parseInt(type1) < Integer.parseInt(type2)){
+			for(Iterator<Vertex> it = vertex1.getVertices(Direction.IN,type1+"-"+type2).iterator();
 					it.hasNext();){
 				Vertex vertex3 = it.next();
 				if(id2 == ((long)vertex3.getId())){					
@@ -69,9 +56,9 @@ public class Baseline {
 				}
 			}
 		}
-		if(Integer.parseInt(type) > Integer.parseInt(type2))
+		if(Integer.parseInt(type1) > Integer.parseInt(type2))
 		{			
-			for(Iterator<Vertex> it = vertex2.getVertices(Direction.IN,type2+"-"+type).iterator();
+			for(Iterator<Vertex> it = vertex2.getVertices(Direction.IN,type2+"-"+type1).iterator();
 					it.hasNext();){
 				Vertex vertex3 = it.next();
 				if(id1 == ((long)vertex3.getId())){					
@@ -101,7 +88,6 @@ public class Baseline {
 		}).enablePath();
 				
 		if(pipe.hasNext()){
-//			System.out.println(pipe);
 			return true;
 		}else{
 			return false;
@@ -119,34 +105,26 @@ public class Baseline {
 		List<String> items = new ArrayList<String>();
 				
 		long time1 = System.currentTimeMillis();
-		if(verbose){
-			System.out.println("Generating colocations of size 1.\n");
-		}
-		int counter = 0;
-	    //could lead to buffer-overflow
+		long counter = 0;
 
 		for (Iterator<Vertex> iterator = graph.getVertices().iterator(); iterator.hasNext();) {
-				Vertex vertex = iterator.next();
-				String type = vertex.getProperty("type");
-				if (total_count.containsKey(type))
-				{
-					total_count.put(type, total_count.get(type)+1);
-				}
-				else {
-					total_count.put(type, (long) 1);
-					items.add(type);
-					
-				}
-				if(verbose){
-					System.out.println(counter+" : "+"Id = "+vertex.getId()+" Place = "+vertex.getProperty("place")+" Type = "+vertex.getProperty("type")+" Visible = "+vertex.getProperty("visible"));
-				}
-				counter++;
+			Vertex vertex = iterator.next();
+			String type = vertex.getProperty("type");
+			if (total_count.containsKey(type)){
+				total_count.put(type, total_count.get(type)+1);
 			}
-		if(true){
-			System.out.println("Total number of colocations of size 1 = "+total_count.size());
+			else {
+				total_count.put(type, (long) 1);
+				items.add(type);
+			}
+			if(verbose){
+				System.out.println(counter+" : "+"Id = "+vertex.getId()+" Place = "+vertex.getProperty("place")+" Type = "+vertex.getProperty("type")+" Visible = "+vertex.getProperty("visible"));
+			}
+			counter++;
 		}
-
 		long time2 = System.currentTimeMillis();
+		System.out.println("Total number of colocations of size 1 = "+total_count.size());
+		
 		System.out.println("Time taken for size 1 : "+(time2-time1));
 		for(int i = 0; i<items.size()-1;i++){
 			for(int j = i+1; j<items.size();j++){
@@ -154,31 +132,27 @@ public class Baseline {
 				if (Integer.parseInt(items.get(i)) < Integer.parseInt(items.get(j))) {
 					temp_List.add(items.get(i));
 					temp_List.add(items.get(j));					
-				}else{
+				}
+				else{
 					temp_List.add(items.get(j));
 					temp_List.add(items.get(i));
 				}
 				Ckplus1.add(temp_List);
 			}
 		}
-		
 		return Ckplus1;
 	}
 	
 	public static HashSet<List<String>> join_and_prune(HashMap<String, HashMap<String, Float>> Lk, int k){
-		
-		long time1 = System.currentTimeMillis();
 		System.out.println("Joining and Pruning to get Candidate Colocations of Size "+(k+1));
-		HashSet<List<String>> Ckplus1 = new HashSet<List<String>>();
-		
-		Iterator it,it1,it2;
+		long time1 = System.currentTimeMillis();
+		HashSet<List<String>> Ckplus1 = new HashSet<List<String>>();		
+		Iterator it, it1, it2;
 		it = Lk.entrySet().iterator();
 		int candidate_count = 0;
-		
 		while(it.hasNext()){
 			List<String> items = new ArrayList<String>();
 			String[] itemskplus1 = new String[k+1];
-			
 			Map.Entry pair = (Map.Entry)it.next();
 			String type1 = (String) pair.getKey();
 //			System.out.println("Type = "+type1);
@@ -876,7 +850,7 @@ public class Baseline {
 //		print_Frequent(L_k, 4);
 		
 		
-		db.close(graph);		
+		db.closeTitanGraph(graph);		
 	}
 
 }

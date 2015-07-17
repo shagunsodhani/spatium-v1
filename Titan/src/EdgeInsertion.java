@@ -1,17 +1,12 @@
 import java.util.Iterator;
 
 import org.elasticsearch.bootstrap.Elasticsearch;
-
-import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.Query.Compare;
-
 
 public class EdgeInsertion extends Thread{
 	public TitanTransaction graph;
