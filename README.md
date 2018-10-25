@@ -1,20 +1,35 @@
 spatium
 =======
 
-Spatial Co-location Rule
+Spatial Co-location Pattern Mining 
 
-Spatium is a part of our B.Tech Project (Final Year Project) at [Indian Institue of Technology, Roorkee](http://www.iitr.ac.in/).
+Spatium is the codebase for our [B.Tech Final Year Project](https://arxiv.org/abs/1810.09007) at [Indian Institue of Technology, Roorkee](http://www.iitr.ac.in/).
 
-Our problem statement reads **Mining colocation rules given a spatial dataset using Graph Database**. Over the years numerous approaches have been proposed for this problem albeit with their own limitations. Furthermore major research has been limited to relational databases. We intend to leverage *graph database* to mine these rules more efficiently. Another aspect we would explore is using *MapReduce paradigm*.
 
-To get a better understanding of the problem and understand the bottlenecks in traditional Join-based approach for co-location rule mining, we implemented Co-location rule miner algorithm as proposed by Shashi Shekhar et al. [Discovering Spatial Co-location Patterns : A Summary of Results](http://www.spatial.cs.umn.edu/paper_ps/sstd01.pdf) in python.
+Spatial co-location pattern mining refers to the task of discovering the group of objects or events that co-occur at many places. Extracting these patterns from spatial data is very difficult due to the complexity of spatial data types, spatial relationships, and spatial auto-correlation. We model the co-location pattern discovery as a clique enumeration problem over a neighborhood graph (which is materialized using a distributed graph database). Further, we propose three new traversal based algorithms, namely `CliqueEnumG`, `CliqueEnumK` and `CliqueExtend`. These algorithms allow for a trade-off between time and memory requirements and support interactive data analysis without having to recompute all the intermediate results.
 
-Next task is to port the Join-Based Algorithm to a graph database. We plan on using [Titan](http://thinkaurelius.github.io/titan/). 
 
-We are using crime data for City of Chicago, USA. It can be accessed [here](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-present/ijzp-q8t2). 
+We used the crime data for City of Chicago, USA. It can be accessed [here](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-present/ijzp-q8t2). 
 
-Stage - I
-For more technical details, go through our [Initial Survey Report](https://sites.google.com/site/sanketmehtaiitr/spatium). Also go through our [demo](http://shagunsodhani.in/spatium/demo.html) and [presentation](http://slides.com/shagun/spatium).
+We used [Titan](http://thinkaurelius.github.io/titan/) Distributed Graph Database for materializing the graph. We used cassandra as the backend stroage and elasticsearch for external indexing. 
 
-Stage - II
-We are using [Titan](http://thinkaurelius.github.io/titan/): Distributed Graph Database for our project. We have setup a titan with cassandra as a backend stroage and elasticsearch as external indexing technique. To get better understanding about Titan, we conducted several exteriments, (compared Titan Standard Index with Elasticsearch, implemented multi-threaded version of neighbourhood exploration, etc). For more details, go through our [Titan Setup and its exploration Report](https://sites.google.com/site/sanketmehtaiitr/spatium). 
+To install the dependencies, run `Titan/install.sh`
+
+
+If you use our code, please cite our [paper](https://arxiv.org/abs/1810.09007)
+
+```
+@ARTICLE{2018arXiv181009007V,
+   author = {{Vaibhav Mehta}, S. and {Sodhani}, S. and {Patel}, D.},
+    title = "{Spatial Co-location Pattern Mining - A new perspective using Graph Database}",
+  journal = {ArXiv e-prints},
+archivePrefix = "arXiv",
+   eprint = {1810.09007},
+ primaryClass = "cs.DB",
+ keywords = {Computer Science - Databases, Computer Science - Distributed, Parallel, and Cluster Computing},
+     year = 2018,
+    month = oct,
+   adsurl = {http://adsabs.harvard.edu/abs/2018arXiv181009007V},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
