@@ -1,7 +1,7 @@
 spatium
 =======
 
-Spatial Co-location Pattern Mining 
+Spatial Co-location Pattern Mining using Graph Database
 
 Spatium is the codebase for our [B.Tech Final Year Project](https://arxiv.org/abs/1810.09007) at [Indian Institue of Technology, Roorkee](http://www.iitr.ac.in/).
 
